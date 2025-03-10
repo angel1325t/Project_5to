@@ -212,7 +212,7 @@
                             {% csrf_token %}
                         </form>
                         <li>
-                            <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="block py-2 px-4 text-sm hover:bg-gray-100">Logout</a>
+                            <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="block py-2 px-4 text-sm hover:bg-gray-100 hover:text-red-600 ">Logout</a>
                         </li>
                         
                         <li>
@@ -230,9 +230,15 @@
     <div class="h-full px-3 pb-4 overflow-y-auto bg-white">
         <ul class="space-y-2 font-medium">
             <li>
-                <a href="#" class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <a href="{% url 'productos' %}" class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
                     <img src="{% static 'icons/product.svg' %}" alt="" srcset="">
-                <span class="ms-3">Products</span>
+                <span class="ms-3">Productos</span>
+            </a>
+            </li>
+            <li>
+                <a href="{% url 'ventas' %}" class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                    <img src="{% static 'icons/register_sale.svg' %}" alt="" srcset="">
+                <span class="ms-3">Registrar Venta</span>
             </a>
             </li>
             <li>
@@ -241,7 +247,7 @@
                         <path d="M16.975 11H10V4.025a1 1 0 0 0-1.066-.998 8.5 8.5 0 1 0 9.039 9.039.999.999 0 0 0-1-1.066h.002Z"/>
                         <path d="M12.5 0c-.157 0-.311.01-.565.027A1 1 0 0 0 11 1.02V10h8.975a1 1 0 0 0 1-.935c.013-.188.028-.374.028-.565A8.51 8.51 0 0 0 12.5 0Z"/>
                     </svg>
-                    <span class="ms-3">Dashboard</span>
+                    <span class="ms-3">Ventas</span>
                 </a>
             </li>
             <li>
@@ -261,14 +267,16 @@
                 <span class="ms-3">Settings</span>
             </a>
         </li>
+        <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+            {% csrf_token %}
+        </form>
         <li>
-            <a href="#" class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
-                <svg class="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10 0C4.478 0 0 4.478 0 10s4.478 10 10 10 10-4.478 10-10-4.478-10-10-10Zm1 5h-2v5h2V5Zm-2 6h2v5h-2v-5Z"/>
-                </svg>
+            <a href="#" onclick="document.getElementById('logout-form').submit(); return false;" class="flex items-center p-2 text-gray-900 rounded-lg hover:bg-gray-100 group">
+                <img src="{% static 'icons/log_out.svg' %}" alt="Log out">
                 <span class="ms-3">Log out</span>
             </a>
         </li>
+        
     </ul>
 </div>
 </aside>
@@ -289,7 +297,7 @@
     {% block section1 %}{% endblock %}
 </main>
 </div>
-<script src="{% static 'js/updateDate.js' %}"></script>
+<script src="{% static 'js/products/updateDate.js' %}"></script>
 {% endblock %}
 
 

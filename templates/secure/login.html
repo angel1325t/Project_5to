@@ -2,6 +2,7 @@
 {% load static %} 
 {% block title %}Iniciar sesión{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/login/login_alert.css' %}">
 <div class="fixed top-4 right-4 z-50 space-y-2">
     {% for message in messages %}
     <div class="relative transition-transform duration-300 ease-in-out transform animate-slide-in alert-box">
@@ -55,6 +56,6 @@
     </div>
 </div>
 
-<script src="{% static 'js/toogle_icon.js' %}"></script>
-<script src="{% static 'js/alerts_login.js' %}"></script>
+<script src="{% static 'js/login/toogle_icon.js' %}"></script>
+<script src="{% static 'js/login/alerts_login.js' %}"></script>
 {% endblock %}

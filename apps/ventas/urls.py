@@ -16,9 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from .views import ventas, get_producto
+from . import views
 
 urlpatterns = [
-    path("", ventas, name='ventas'),
-    path('get-producto/<int:producto_id>/', get_producto, name='get_producto'),
+    path("", views.ventas, name='ventas'),
+    path('get-producto/<int:producto_id>/', views.get_producto, name='get_producto'),
+    path('procesar-venta/', views.process_sale, name='process_sale'),
+    path('procesar-transferencia/', views.process_transferencia, name='procesar_transferencia'),
 ]
+

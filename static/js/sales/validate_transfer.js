@@ -81,9 +81,9 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (input.name === 'email') {
-        const emailPattern = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?$/;
         if (!emailPattern.test(input.value.trim())) {
-          showValidationMessage('El correo electrónico debe ser una dirección válida de Gmail.');
+          showValidationMessage('El correo electrónico debe ser una dirección válida.');
           return false;
         }
       }

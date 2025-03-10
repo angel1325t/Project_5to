@@ -2,7 +2,7 @@
 {% load static %} 
 {% block section1 %}
 
-<link rel="stylesheet" href="{% static 'css/product_search.css' %}">
+<link rel="stylesheet" href="{% static 'css/products/product_search.css' %}">
 <link href="https://cdn.jsdelivr.net/npm/notyf@3.7.0/notyf.min.css" rel="stylesheet">   
 <div class="grid grid-cols-1 gap-6 p-4 sm:p-6">
   <!-- Panel de productos -->
@@ -18,18 +18,21 @@
                   Escanear QR
               </button>
               <div class="relative w-full sm:w-auto mt-2 sm:mt-0">
-                  <input type="text" id="search-product" placeholder="Buscar producto..." class="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-[#2234B9]" onkeyup="filterProducts()" />
-                  <div class="absolute w-full bg-white border mt-1 rounded shadow-md hidden custom-dropdown" id="product-list">
-                      {% for producto in productos %}
-                      <div class="product-item px-3 py-2 hover:bg-gray-100 cursor-pointer">{{ producto.nombre }}</div>
-                      {% endfor %}
-                  </div>
-                  <div id="no-results-message"
-                      class="hidden absolute top-full mt-2 right-0 bg-white w-64 p-4 shadow-lg text-center text-red-600 border border-red-500 rounded-lg z-50">
-                      <button id="close-button" class="absolute top-2 right-2 text-red-600 hover:text-red-800">×</button>
-                      Producto no encontrado
-                  </div>
-              </div>
+                <input type="text" id="search-product" placeholder="Buscar producto..." class="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-[#2234B9]" onkeyup="filterProducts()" />
+                <div class="absolute w-full bg-white border mt-1 rounded shadow-md hidden custom-dropdown" id="product-list">
+                    {% for producto in productos %}
+                    <div class="product-item px-3 py-2 hover:bg-gray-100 cursor-pointer" data-id="{{ producto.id_producto }}" onclick="addProductToSale('{{ producto.id }}')">
+                        {{ producto.nombre }}
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div id="no-results-message" class="hidden absolute top-full mt-2 right-0 bg-white w-64 p-4 shadow-lg text-center text-red-600 border border-red-500 rounded-lg z-50">
+                    <button id="close-button" class="absolute top-2 right-2 text-red-600 hover:text-red-800">×</button>
+                    Producto no encontrado
+                </div>
+            </div>
+            
           </div>
       </div>
 
@@ -51,9 +54,6 @@
           <label class="block text-gray-600 mb-1">Monto recibido:</label>
           <div class="flex space-x-2">
               <input type="number" id="cash-amount" class="border border-gray-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#2234B9]" placeholder="0.00" />
-          </div>
-          <div id="change-container" class="mt-2 hidden">
-              <p class="text-gray-600">Cambio a devolver: <span id="change-amount" class="font-bold">$0.00</span></p>
           </div>
       </div>
       
@@ -78,9 +78,9 @@
             </div>
             <div class="flex justify-between mb-2">
                 <span class="text-gray-600">ITBIS (18%):</span>
-                <span id="tax" class="font-medium">$0.00</span>
+                <span id="tax" class="font-semibold text-yellow-600">$0.00</span>
             </div>
-            <div class="flex justify-between mb-4 text-lg font-semibold">
+            <div class="flex justify-between mb-4 text-lg font-semibold text-red-600">
                 <span>Total:</span>
                 <span id="total">$0.00</span>
             </div>
@@ -97,11 +97,11 @@
         
 
           <!-- Formulario multistep (visible solo para Transferencia) -->
-            <div id="multistep-form">
+            <div id="multistep-form" class="hidden">
                 <div class="flex items-center justify-around mb-6">
                   <div class="text-center">
                     <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-blue-600 text-white font-bold" data-step="1">1</div>
-                    <div class="mt-2 text-sm font-semibold text-gray-700">Pedido</div>
+                    <div class="mt-2 text-sm font-semibold text-gray-700">Resumen</div>
                   </div>
                   <div class="flex-1 mx-2 border-t-2 border-gray-300 mt-5"></div>
                   <div class="text-center">
@@ -111,259 +111,48 @@
                   <div class="flex-1 mx-2 border-t-2 border-gray-300 mt-5"></div>
                   <div class="text-center">
                     <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-gray-300 text-white font-bold" data-step="3">3</div>
-                    <div class="mt-2 text-sm font-semibold text-gray-700">Resumen</div>
+                    <div class="mt-2 text-sm font-semibold text-gray-700">Transferencia</div>
                   </div>
                 </div>
             
-                <form action="/procesar-transferencia" method="POST" enctype="multipart/form-data">
-                  <!-- PASO 1 -->
-                  <div class="step-content" data-step="1">
-                    <h2 class="text-xl font-bold mb-4">Pedido</h2>
-                    <p class="mb-4">Resumen de productos.</p>
-                    <div class="p-4 border border-gray-300 rounded">
-                      <p><strong>Producto:</strong></p>
-                      <p><strong>Cantidad:</strong></p>
-                      <p><strong>Precio:</strong></p>
-                    </div>
-                  </div>
-            
-                  <!-- PASO 2 -->
-                  <div class="step-content" data-step="2">
-                    <h2 class="text-xl font-bold mb-4">Datos del Cliente</h2>
-                    <input type="text" name="name" placeholder="Nombre completo" class="w-full border px-3 py-2 mb-2" required>
-                    <input type="tel" name="phone" id="phone" placeholder="Teléfono" class="w-full border px-3 py-2 mb-2" required maxlength="15">
-                    <input type="email" name="email" placeholder="Correo Electrónico" class="w-full border px-3 py-2 mb-2" required>
-                  </div>
+                <form action="{% url 'procesar_transferencia' %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
                   
-            
-                  <!-- PASO 3 -->
-                  <div class="step-content" data-step="3">
-                    <h2 class="text-xl font-bold mb-4">Datos de la Transferencia</h2>
-                    <input type="text" placeholder="Número de Referencia" class="w-full border px-3 py-2 mb-2" required>
-                    <input type="text" placeholder="Banco Emisor" class="w-full border px-3 py-2 mb-2" required>
-                    <input type="number" step="0.01" placeholder="Monto Transferido" class="w-full border px-3 py-2 mb-2" required>
-                  </div>
-            
-                  <div class="flex justify-between mt-6">
-                    <button type="button" class="prev-step bg-gray-300 px-4 py-2 rounded ">Anterior</button>
-                    <button type="button" class="next-step bg-blue-600 text-white px-4 py-2 rounded">Siguiente</button>
-                    <button type="submit" class="pay-step bg-green-600 text-white px-4 py-2 rounded ">Pagar</button>
-                  </div>
+                    <!-- PASO 1 -->
+                    <div class="step-content" data-step="1">
+                    </div>
+                
+                    <!-- PASO 2 -->
+                    <div class="step-content" data-step="2">
+                        <h2 class="text-xl font-bold mb-4">Datos del Cliente</h2>
+                        <input type="text" name="name" placeholder="Nombre completo" class="w-full border px-3 py-2 mb-2" required>
+                        <input type="tel" name="phone" id="phone" placeholder="Teléfono" class="w-full border px-3 py-2 mb-2" required maxlength="15">
+                        <input type="email" name="email" placeholder="Correo Electrónico" class="w-full border px-3 py-2 mb-2" required>
+                    </div>
+                
+                    <!-- PASO 3 -->
+                    <div class="step-content" data-step="3">
+                        <h2 class="text-xl font-bold mb-4">Datos de la Transferencia</h2>
+                        <input type="text" name="reference" placeholder="Número de Referencia" class="w-full border px-3 py-2 mb-2" required>
+                        <input type="text" name="bank" placeholder="Banco Emisor" class="w-full border px-3 py-2 mb-2" required>
+                        <input type="number" name="monto" id="monto" step="0.01" placeholder="Monto Transferido" class="w-full border px-3 py-2 mb-2 bg-gray-100 cursor-not-allowed" readonly required>
+                    </div>
+                
+                    <div class="flex justify-between mt-6">
+                        <button type="button" class="prev-step bg-gray-300 px-4 py-2 rounded ">Anterior</button>
+                        <button type="button" class="next-step bg-blue-600 text-white px-4 py-2 rounded" id="siguiente">Siguiente</button>
+                        <button type="submit" class="pay-step bg-green-600 text-white px-4 py-2 rounded ">Pagar</button>
+                    </div>
                 </form>
               </div>
-            
-<script src="../../static/js/ver3.js"></script>
-<script src="{% static 'js/payment_control_method.js' %}"></script>
-<!-- <script src="{% static 'js/multiStep.js' %}"></script> -->
-<script src="{% static 'js/product_search.js' %}"></script>
+            </div>
+        </div>
+              
+<script src="{% static 'js/sales/validate_transfer.js' %}"></script>
+<script src="{% static 'js/sales/payment_control_method.js' %}"></script>
+<script src="{% static 'js/sales/sales.js' %}" type="module"></script>
+<script src="{% static 'js/sales/process_sales.js' %}"></script>
+<script src="{% static 'js/products/product_search.js' %}"></script>
 <script src="https://unpkg.com/html5-qrcode" defer></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    let productCounter = 0;
-
-    const scannerContainer = document.getElementById("scanner-container");
-    const toggleScannerButton = document.getElementById("toggle-scanner");
-    const closeScannerButton = document.getElementById("close-scanner");
-    const clearSaleButton = document.getElementById("clear-sale");
-
-    // Configuración de Notyf
-    const notyf = new Notyf({
-        duration: 3000, // Tiempo que estará visible el mensaje
-        position: { x: 'right', y: 'top' }, // Posición en la pantalla
-        dismissible: true, // Si el mensaje se puede cerrar manualmente
-    });
-
-    let qrScanner = new Html5Qrcode("reader");
-    const beepSound = new Audio('/static/sounds/beep.mp3');  // Ruta de tu sonido
-
-    function getScannerConfig() {
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
-
-        let fps, qrbox;
-
-        if (screenWidth <= 480) {
-            // Para pantallas pequeñas (móviles)
-            fps = 10;
-            qrbox = { width: 100, height: 100 };
-        } else if (screenWidth <= 1024) {
-            // Para pantallas medianas (tabletas)
-            fps = 15;
-            qrbox = { width: 200, height: 200 };
-        } else {
-            // Para pantallas grandes (escritorios)
-            fps = 20;
-            qrbox = { width: 300, height: 300 };
-        }
-
-        return { fps, qrbox };
-    }
-
-    toggleScannerButton.addEventListener("click", function() {
-        console.log("Iniciando escáner...");
-        scannerContainer.classList.remove("hidden");
-
-        // Reiniciamos el escáner si ya fue limpiado
-        if (!qrScanner) {
-            qrScanner = new Html5Qrcode("reader");
-        }
-
-        const config = getScannerConfig();
-
-        qrScanner.start(
-            { facingMode: "environment" },
-            { fps: config.fps, qrbox: config.qrbox },
-            async (decodedText) => {
-                console.log("Contenido QR:", decodedText);
-
-                // Reproducir sonido al escanear
-                beepSound.play().catch(err => console.warn("Error reproduciendo sonido:", err));
-
-                let productId = null;
-                try {
-                    const parsedData = JSON.parse(decodedText);
-                    productId = parsedData.id;
-                } catch (err) {
-                    console.error("Error al parsear QR:", err);
-                    alert("El código QR no es válido");
-                    qrScanner.stop();
-                    scannerContainer.classList.add("hidden");
-                    return;
-                }
-
-                console.log("ID escaneado:", productId);
-
-                // Pausamos brevemente para evitar lecturas duplicadas
-                qrScanner.pause();
-                setTimeout(() => qrScanner.resume(), 700);
-
-                fetch(`/empleados/get-producto/${productId}/`)
-                    .then(response => {
-                        if (!response.ok) {
-                            // Si el código de respuesta no es exitoso (404, 500, etc.)
-                            throw new Error(`Producto no encontrado. Error ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Si la respuesta es correcta, continuamos procesando
-                        productCounter++;
-                        const uniqueId = `${productId}-${productCounter}`;
-
-                        const productItem = document.createElement('div');
-                        productItem.classList.add('product-item');
-                        productItem.innerHTML = `
-                        <div class="flex flex-wrap items-center justify-between gap-4">
-                            <div class="flex items-center space-x-4 w-full sm:w-auto">
-                                <img src="${data.image}" alt="Producto" class="w-12 h-12 object-cover rounded-md">
-                                <div>
-                                    <p class="font-semibold">${data.nombre}</p>
-                                    <p class="text-gray-500">${data.descripcion}</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-                                <p class="text-gray-500 py-2" id="price-${uniqueId}">Precio: $${data.precio}</p>
-                                <p class="text-gray-500 py-2 hidden sm:block">Categoría: ${data.categoria}</p>
-                                <div class="flex items-center space-x-2">
-                                    <input type="number" value="1" min="1" class="w-16 p-1 border rounded text-center" id="quantity-${uniqueId}">
-                                    <button class="text-red-500 hover:text-red-700" id="remove-${uniqueId}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <hr class="border-t border-gray-200 pt-2">
-                        `;
-
-                        document.getElementById('sale-items').appendChild(productItem);
-
-                        const emptyMessage = document.getElementById('empty-sale-message');
-                        if (emptyMessage) {
-                            emptyMessage.classList.add('hidden');
-                        }
-
-                        document.getElementById(`remove-${uniqueId}`).addEventListener("click", function() {
-                            productItem.remove();
-                            if (document.getElementById('sale-items').children.length === 0) {
-                                emptyMessage.classList.remove('hidden');
-                            }
-                            updatePrices();
-                        });
-
-                        const quantityInput = document.getElementById(`quantity-${uniqueId}`);
-                        quantityInput.addEventListener("input", function() {
-                            const quantity = parseInt(quantityInput.value) || 1;
-                            const newPrice = data.precio * quantity;
-                            document.getElementById(`price-${uniqueId}`).textContent = `Precio: $${newPrice.toFixed(2)}`;
-                            updatePrices();
-                        });
-
-                        updatePrices();
-                    })
-                    .catch(err => {
-                        console.error("Error en la petición AJAX:", err);
-                        notyf.error("Producto no encontrado o error en la solicitud.");
-                    });
-            },
-            (error) => {
-                console.warn("Error en escaneo QR:", error);
-            }
-        );
-    });
-
-    closeScannerButton.addEventListener("click", function() {
-        scannerContainer.classList.add("hidden");
-        if (qrScanner) {
-            qrScanner.stop().then(() => {
-                console.log("Escáner detenido.");
-            }).catch(err => console.warn("Error al detener escáner:", err));
-        }
-    });
-
-    // Función para limpiar la venta
-    clearSaleButton.addEventListener("click", function() {
-        // Eliminar todos los productos de la venta
-        const saleItemsContainer = document.getElementById('sale-items');
-        saleItemsContainer.innerHTML = ''; // Vaciar el contenedor de productos
-
-        // Mostrar el mensaje de "No hay productos agregados"
-        const emptyMessage = document.getElementById('empty-sale-message');
-        if (emptyMessage) {
-            emptyMessage.classList.remove('hidden');
-        }
-
-        // Reiniciar los precios
-        updatePrices();
-    });
-
-    function updatePrices() {
-        let subtotal = 0;
-        const productItems = document.querySelectorAll('.product-item');
-        productItems.forEach(item => {
-            const priceElement = item.querySelector('[id^="price-"]');
-            if (!priceElement) {
-                console.warn("No se encontró el elemento de precio en el producto:", item);
-                return;
-            }
-            const priceText = priceElement.textContent;
-            const price = parseFloat(priceText.replace('Precio: $', '').trim());
-            subtotal += price;
-        });
-
-        const tax = subtotal * 0.18;
-        const total = subtotal + tax;
-
-        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('tax').textContent = `$${tax.toFixed(2)}`;
-        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
-    }
-});
-
-
-
-</script>
-
 
 {% endblock section1 %}
