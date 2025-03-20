@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pagar con Tarjeta</title>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-gray-800">Pagar con Tarjeta</h2>
+      <div class="flex space-x-2">
+        <img src="/static/icons/mastercard.svg" alt="MasterCard" class="h-8 w-auto">
+        <img src="/static/icons/visa.svg" alt="Visa" class="h-8 w-auto">
+    </div>
+    
+    </div>
+    
+    <form id="payment-form" method="post" action="{% url 'process_card_payment' %}" class="space-y-6">
+      {% csrf_token %}
+      
+      <!-- Información del cliente -->
+      <div class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <input type="text" placeholder="Ingrese su nombre" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+          </div>
+          <div>
+            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+            <input type="email" placeholder="Ingrese su correo" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Detalles del pago -->
+      <div>
+        <div class="flex justify-between mb-1">
+          <label for="total" class="block text-sm font-medium text-gray-700">Monto a pagar (USD)</label>
+          <span class="text-sm text-gray-500" id="currency-indicator">USD $</span>
+        </div>
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">$</span>
+          <input type="number" id="total" name="total" step="0.01" class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+        </div>
+      </div>
+      
+      <!-- Tarjeta de crédito -->
+      <div>
+        <label for="card-element" class="block text-sm font-medium text-gray-700 mb-1">Información de tarjeta</label>
+        <div id="card-element" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"></div>
+        <div id="card-errors" role="alert" class="mt-2 text-sm text-red-600"></div>
+      </div>
+
+      <div class="pt-2">
+        <button type="submit" id="pay-button" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md shadow transition duration-200 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Pagar ahora
+        </button>
+      </div>
+      
+      <p class="text-xs text-gray-500 text-center mt-4">
+        Tus datos de pago se procesan de forma segura. No almacenamos los detalles de tu tarjeta.
+      </p>
+    </form>
+  </div>
+
+  <script>
+    var stripe = Stripe('pk_test_51R1rEOAoMPdR1kJ25eyjtM1494RxmkFdyppEsjxHam1D3qXJiBhDXXveFE8UwxhIswbiVZhhReTFOJgt4pEcwdYT00a72XN69h');
+    var elements = stripe.elements();
+  
+    var style = {
+      base: {
+        color: "#32325d",
+        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+        fontSize: "16px",
+        "::placeholder": { color: "#aab7c4" }
+      },
+      invalid: {
+        color: "#fa755a",
+        iconColor: "#fa755a"
+      }
+    };
+  
+    var card = elements.create("card", { style: style });
+    card.mount("#card-element");
+  
+    card.addEventListener("change", function(event) {
+      var displayError = document.getElementById("card-errors");
+      displayError.textContent = event.error ? event.error.message : "";
+    });
+  
+    const form = document.querySelector("#payment-form");
+    const payButton = document.getElementById("pay-button");
+    
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+  
+      var total = document.getElementById("total").value;
+      if (!total || total <= 0) {
+        document.getElementById("card-errors").textContent = "Por favor, ingrese un monto válido.";
+        return;
+      }
+      
+      // Deshabilitar el botón durante el procesamiento
+      payButton.disabled = true;
+      payButton.classList.add("opacity-75");
+      payButton.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Procesando...
+      `;
+  
+      stripe.createToken(card).then(function(result) {
+        if (result.error) {
+          document.getElementById("card-errors").textContent = result.error.message;
+          // Reactivar el botón
+          payButton.disabled = false;
+          payButton.classList.remove("opacity-75");
+          payButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            Pagar ahora
+          `;
+        } else {
+          stripeTokenHandler(result.token);
+        }
+      });
+    });
+  
+    function stripeTokenHandler(token) {
+      console.log("✅ Token generado:", token.id);
+      
+      var hiddenInput = document.createElement("input");
+      hiddenInput.setAttribute("type", "hidden");
+      hiddenInput.setAttribute("name", "stripeToken");
+      hiddenInput.setAttribute("value", token.id);
+      form.appendChild(hiddenInput);
+      
+      // Enviar el formulario
+      console.log("Enviando formulario...");
+      form.submit();
+    }
+  </script>
+</body>
+</html>

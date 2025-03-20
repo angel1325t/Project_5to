@@ -27,17 +27,22 @@ class Venta(models.Model):
     
 
 class Transferencia(models.Model):
+    TIPO_CUENTA_CHOICES = [
+        ('CORRIENTE', 'Cuenta Corriente'),
+        ('AHORROS', 'Cuenta de Ahorros'),
+    ]
     venta = models.OneToOneField(Venta, on_delete=models.CASCADE, related_name='transferencia')
     numero_referencia = models.CharField(max_length=20)
     banco_emisor = models.CharField(max_length=100)
     nombre_cliente = models.CharField(max_length=255)
     telefono_cliente = models.CharField(max_length=15)
     correo_cliente = models.EmailField()
+    tipo_cuenta = models.CharField(max_length=20, choices=TIPO_CUENTA_CHOICES)
 
     def __str__(self):
         return f"Transferencia para Venta #{self.venta.id_venta} - Ref: {self.numero_referencia}"
 
-    
+
 class DetalleVenta(models.Model):
     id_detalle = models.AutoField(primary_key=True)
     venta = models.ForeignKey(

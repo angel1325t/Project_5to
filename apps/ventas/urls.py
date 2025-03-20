@@ -23,5 +23,7 @@ urlpatterns = [
     path('get-producto/<int:producto_id>/', views.get_producto, name='get_producto'),
     path('procesar-venta/', views.process_sale, name='process_sale'),
     path('procesar-transferencia/', views.process_transferencia, name='procesar_transferencia'),
+    path('stripe/', views.stripe_view, name='stripe'),
+    path("process-card-payment/", views.process_card_payment, name="process_card_payment"),
 ]
 

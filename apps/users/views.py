@@ -39,7 +39,7 @@ def login_view(request):
                 return render(request, 'secure/disable_user.html')  # Redirige si está deshabilitado
             
             login(request, user)  # Inicia sesión si todo está correcto
-            return redirect('admin:index' if user.is_superuser else 'empleados')
+            return redirect('admin:index' if user.is_superuser else 'productos')
         else:
             messages.error(request, "Nombre de usuario o contraseña incorrectos.")
             return redirect('login')

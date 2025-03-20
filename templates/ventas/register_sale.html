@@ -59,14 +59,77 @@
       
       
       <!-- Selector de método de pago -->
-      <div class="flex justify-between mb-4 mt-4">
-          <span class="text-gray-600">Método de pago:</span>
-          <select id="payment-method" class="border border-gray-300 rounded px-2 pr-6 py-1 focus:ring-1 focus:ring-[#2234B9]">
-              <option value="cash">Efectivo</option>
-              <option value="card">Tarjeta</option>
-              <option value="transfer">Transferencia</option>
-            </select>
+<div class="flex justify-between mb-4 mt-4">
+    <span class="text-gray-600">Método de pago:</span>
+    <select id="payment-method" class="border border-gray-300 rounded px-2 pr-6 py-1 focus:ring-1 focus:ring-[#2234B9]">
+        <option value="cash">Efectivo</option>
+        <option value="card">Tarjeta</option>
+        <option value="transfer">Transferencia</option>
+    </select>
+</div>
+
+<!-- Formulario de pago con tarjeta (oculto por defecto) -->
+<div id="card-payment" class="flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Pagar con Tarjeta</h2>
+            <div class="flex space-x-2">
+                <img src="/static/icons/mastercard.svg" alt="MasterCard" class="h-8 w-auto">
+                <img src="/static/icons/visa.svg" alt="Visa" class="h-8 w-auto">
+            </div>
         </div>
+        
+        <form id="payment-form" method="post" action="{% url 'process_card_payment' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Información del cliente -->
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <input type="text" placeholder="Ingrese su nombre" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                        <input type="email" placeholder="Ingrese su correo" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Detalles del pago -->
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label for="total" class="block text-sm font-medium text-gray-700">Monto a pagar (USD)</label>
+                    <span class="text-sm text-gray-500" id="currency-indicator">USD $</span>
+                </div>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">$</span>
+                    <input type="number" id="total-card" name="total" step="0.01" class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm" required readonly>
+                </div>
+            </div>
+            
+            <!-- Tarjeta de crédito -->
+            <div>
+                <label for="card-element" class="block text-sm font-medium text-gray-700 mb-1">Información de tarjeta</label>
+                <div id="card-element" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"></div>
+                <div id="card-errors" role="alert" class="mt-2 text-sm text-red-600"></div>
+            </div>
+            
+            <div class="pt-2">
+                <button type="submit" id="pay-button-card" class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow transition duration-200 flex items-center justify-center disabled">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Pagar ahora
+                </button>
+            </div>
+            
+            <p class="text-xs text-gray-500 text-center mt-4">
+                Tus datos de pago se procesan de forma segura. No almacenamos los detalles de tu tarjeta.
+            </p>
+        </form>
+    </div>
+</div>
         
 
     
@@ -95,7 +158,6 @@
             </div>
         </div>
         
-
           <!-- Formulario multistep (visible solo para Transferencia) -->
             <div id="multistep-form" class="hidden">
                 <div class="flex items-center justify-around mb-6">
@@ -121,7 +183,7 @@
                     <!-- PASO 1 -->
                     <div class="step-content" data-step="1">
                     </div>
-                
+                  
                     <!-- PASO 2 -->
                     <div class="step-content" data-step="2">
                         <h2 class="text-xl font-bold mb-4">Datos del Cliente</h2>
@@ -129,27 +191,34 @@
                         <input type="tel" name="phone" id="phone" placeholder="Teléfono" class="w-full border px-3 py-2 mb-2" required maxlength="15">
                         <input type="email" name="email" placeholder="Correo Electrónico" class="w-full border px-3 py-2 mb-2" required>
                     </div>
-                
+                  
                     <!-- PASO 3 -->
                     <div class="step-content" data-step="3">
                         <h2 class="text-xl font-bold mb-4">Datos de la Transferencia</h2>
                         <input type="text" name="reference" placeholder="Número de Referencia" class="w-full border px-3 py-2 mb-2" required>
                         <input type="text" name="bank" placeholder="Banco Emisor" class="w-full border px-3 py-2 mb-2" required>
+                        <select name="tipo_cuenta" class="w-full border px-3 py-2 mb-2" required>
+                            <option value="">Seleccione el tipo de cuenta</option>
+                            <option value="CORRIENTE">Cuenta Corriente</option>
+                            <option value="AHORROS">Cuenta de Ahorros</option>
+                        </select>
                         <input type="number" name="monto" id="monto" step="0.01" placeholder="Monto Transferido" class="w-full border px-3 py-2 mb-2 bg-gray-100 cursor-not-allowed" readonly required>
                     </div>
-                
+                  
                     <div class="flex justify-between mt-6">
-                        <button type="button" class="prev-step bg-gray-300 px-4 py-2 rounded ">Anterior</button>
+                        <button type="button" class="prev-step bg-gray-300 px-4 py-2 rounded">Anterior</button>
                         <button type="button" class="next-step bg-blue-600 text-white px-4 py-2 rounded" id="siguiente">Siguiente</button>
-                        <button type="submit" class="pay-step bg-green-600 text-white px-4 py-2 rounded ">Pagar</button>
+                        <button type="submit" class="pay-step bg-green-600 text-white px-4 py-2 rounded">Pagar</button>
                     </div>
                 </form>
               </div>
             </div>
         </div>
-              
+
+<script src="https://js.stripe.com/v3/"></script>
+<script src="{% static 'js/sales/stripe.js' %}"></script>
 <script src="{% static 'js/sales/validate_transfer.js' %}"></script>
-<script src="{% static 'js/sales/payment_control_method.js' %}"></script>
+<script src="{% static 'js/sales/ver.js' %}"></script>
 <script src="{% static 'js/sales/sales.js' %}" type="module"></script>
 <script src="{% static 'js/sales/process_sales.js' %}"></script>
 <script src="{% static 'js/products/product_search.js' %}"></script>

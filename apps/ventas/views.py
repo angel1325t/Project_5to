@@ -1,3 +1,5 @@
+import stripe
+from django.conf import settings
 from decimal import Decimal
 from django.shortcuts import render
 import json
@@ -101,7 +103,7 @@ def process_sale(request):
                 print(f"Producto obtenido: {producto.nombre}")
 
                 cantidad = Decimal(item["quantity"])
-                precio_unitario = Decimal(str(item["price"]))
+                precio_unitario = Decimal(str(item["price"])) / cantidad
                 subtotal = cantidad * precio_unitario
                 # Calcular ITBIS como el 18% del subtotal
                 itbis = subtotal * Decimal("0.18")
@@ -131,9 +133,6 @@ def process_sale(request):
     return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
 
 
-
-
-
 def process_transferencia(request):
     if request.method == "POST":
         try:
@@ -151,8 +150,9 @@ def process_transferencia(request):
             numero_referencia = data.get("reference")
             banco_emisor = data.get("bank")
             monto_transferencia = data.get("monto")
+            tipo_cuenta = data.get("tipo_cuenta")  # Nuevo campo para el tipo de cuenta
 
-            if not all([nombre_cliente, telefono_cliente, correo_cliente, numero_referencia, banco_emisor, monto_transferencia]):
+            if not all([nombre_cliente, telefono_cliente, correo_cliente, numero_referencia, banco_emisor, monto_transferencia, tipo_cuenta]):
                 print("Error: Faltan datos obligatorios en la solicitud.")
                 return JsonResponse({"success": False, "message": "Faltan datos obligatorios"}, status=400)
 
@@ -173,14 +173,15 @@ def process_transferencia(request):
                 fecha=now()
             )
 
-            # Crear la transferencia con la información del cliente
+            # Crear la transferencia con la información del cliente y el tipo de cuenta
             transferencia = Transferencia.objects.create(
                 venta=venta,
                 numero_referencia=numero_referencia,
                 banco_emisor=banco_emisor,
                 nombre_cliente=nombre_cliente,
                 telefono_cliente=telefono_cliente,
-                correo_cliente=correo_cliente
+                correo_cliente=correo_cliente,
+                tipo_cuenta=tipo_cuenta  # Se almacena el tipo de cuenta seleccionado
             )
 
             print(f"Transferencia procesada correctamente para la venta #{venta.id_venta} con referencia {transferencia.numero_referencia}")
@@ -197,4 +198,59 @@ def process_transferencia(request):
             return JsonResponse({"success": False, "message": f"Error inesperado: {str(e)}"}, status=500)
 
     print("Método no permitido. Se esperaba POST.")
+    return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
+
+
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def stripe_view(request):
+    return render(request, "test/stripe.html")
+
+def process_card_payment(request):
+    if request.method == "POST":
+        print("✅ Recibida solicitud de pago")
+
+        try:
+            data = request.POST
+            print("📥 Datos recibidos:", data)
+
+            stripe_token = data.get("stripeToken")
+            total = data.get("total")
+
+            if not stripe_token or not total:
+                print("❌ Datos incompletos")
+                return JsonResponse({"success": False, "message": "Datos incompletos"}, status=400)
+
+            total_decimal = Decimal(total)
+
+            charge = stripe.Charge.create(
+                amount=int(total_decimal * 100),
+                currency="usd",
+                source=stripe_token,
+                description="Pago con tarjeta en POS"
+            )
+
+            print("💳 Pago exitoso en Stripe:", charge.id)
+
+            venta = Venta.objects.create(
+                empleado=request.user,
+                total=total_decimal,
+                metodo_pago="TARJETA",
+                fecha=now()
+            )
+
+            return JsonResponse({
+                "success": True,
+                "message": "Pago procesado correctamente",
+                "sale_id": venta.id_venta,
+                "charge_id": charge.id
+            })
+
+        except stripe.error.CardError as e:
+            print("❌ Error con la tarjeta:", str(e))
+            return JsonResponse({"success": False, "message": "Error con la tarjeta: " + str(e)}, status=400)
+        except Exception as e:
+            print("❌ Error inesperado:", str(e))
+            return JsonResponse({"success": False, "message": f"Error inesperado: {str(e)}"}, status=500)
+
     return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
