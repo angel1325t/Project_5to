@@ -18,33 +18,24 @@ def add_product_view(request):
     return redirect('products')
 
 def product_view(request):
-    # Obtener los parámetros de búsqueda y categoría desde la URL
-    search_query = request.GET.get('search', '')  # Obtener la búsqueda
-    category_filter = request.GET.get('category', '')  # Obtener el filtro de categoría
+    empleado = request.user
 
-    # Filtrar los productos por la búsqueda y la categoría
-    products_list = Producto.objects.all()
+    # Obtener todos los productos activos
+    products_list = Producto.objects.filter(activo=True)
 
-    if search_query:
-        products_list = products_list.filter(nombre__icontains=search_query)  # Filtra por nombre
+    # Paginación
+    paginator = Paginator(products_list, 5)  # 5 productos por página
+    page_number = request.GET.get('page')  # Número de página desde la URL
+    products = paginator.get_page(page_number)
 
-    if category_filter:
-        products_list = products_list.filter(categoria__id_categoria=category_filter)  # Filtra por categoría
+    # Obtener todas las categorías
+    categories = Categoria.objects.all()
 
-
-    paginator = Paginator(products_list, 5)  # Muestra 5 productos por página
-    page_number = request.GET.get('page')  # Obtiene el número de página desde la URL
-    products = paginator.get_page(page_number)  # Obtiene los productos de la página actual
-
-    # Obtener las categorías disponibles para el filtro (accediendo a los nombres)
-    categories = Categoria.objects.all()  # Obtén todos los objetos de Categoria
-
+    # Contexto para el template
     context = {
         'products': products,
         'categories': categories,
-        'search_query': search_query,
-        'category_filter': category_filter
+        'empleado': empleado
     }
 
     return render(request, 'products/products.html', context)
-

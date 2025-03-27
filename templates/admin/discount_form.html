@@ -1,0 +1,197 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrahead %}
+<style>
+    :root {
+        --bg-dark: #343a40;
+        --bg-medium: #454d55;
+        --bg-light: #495057;
+        --text-light: #ecf0f1;
+        --text-muted: #bdc3c7;
+        --accent-blue: #3498db;
+        --accent-blue-hover: #2384c6;
+        --border-color: rgb(61, 67, 72);
+    }
+
+    .discount-container {
+        width: 95%;
+        max-width: 800px;
+        margin: 30px auto;
+        background-color: var(--bg-dark);
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .discount-container h2 {
+        color: var(--text-light);
+        margin-bottom: 20px;
+        text-align: center;
+        border-bottom: 2px solid var(--bg-medium);
+        padding-bottom: 15px;
+        font-size: 1.5rem;
+    }
+
+    .discount-container form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .discount-container form p {
+        margin-bottom: 15px;
+    }
+
+    .discount-container input[type="text"],
+    .discount-container input[type="number"],
+    .discount-container select {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--bg-medium);
+        border: 1px solid var(--border-color);
+        color: var(--text-light);
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+
+    .discount-container input[type="text"]:focus,
+    .discount-container input[type="number"]:focus,
+    .discount-container select:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+
+    .discount-container input[type="submit"],
+    .discount-container .button {
+        display: inline-block;
+        padding: 10px 20px;
+        margin-top: 15px;
+        background-color: var(--accent-blue);
+        color: white;
+        text-decoration: none;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        text-align: center;
+    }
+
+    .discount-container input[type="submit"]:hover,
+    .discount-container .button:hover {
+        background-color: var(--accent-blue-hover);
+    }
+
+    .discount-container .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        margin-top: 20px;
+        gap: 10px;
+    }
+
+    .discount-container label {
+        color: var(--text-muted);
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .error-message {
+        color: #e74c3c;
+        font-size: 0.9rem;
+        margin-top: 5px;
+        display: none;
+    }
+
+    @media (max-width: 600px) {
+        .discount-container {
+            padding: 15px;
+            width: 90%;
+        }
+
+        .discount-container .button-group {
+            flex-direction: column;
+        }
+
+        .discount-container input[type="submit"],
+        .discount-container .button {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .discount-container h2 {
+            font-size: 1.2rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="discount-container">
+    <h2>Aplicar descuento a {{ selected_items|length }} producto(s)</h2>
+    <form id="discountForm" method="post" action="" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="apply_discount">
+        {% for field in form %}
+            <p>
+                {{ field.label_tag }}
+                {{ field }}
+                <span id="{{ field.name }}-error" class="error-message">Este campo es obligatorio</span>
+            </p>
+        {% endfor %}
+        {% for item in selected_items %}
+            <input type="hidden" name="_selected_action" value="{{ item }}">
+        {% endfor %}
+        <div class="button-group">
+            <input type="submit" name="apply" value="Aplicar descuento" class="btn btn-primary">
+            <a href="{% url 'admin:productos_producto_changelist' %}" class="button btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('discountForm');
+        const inputs = form.querySelectorAll('input[type="text"], input[type="number"], select');
+        
+        // Custom validation function
+        function validateField(input) {
+            const errorElement = document.getElementById(`${input.name}-error`);
+            
+            if (input.hasAttribute('required') && !input.value.trim()) {
+                input.classList.add('invalid');
+                errorElement.style.display = 'block';
+                return false;
+            } else {
+                input.classList.remove('invalid');
+                errorElement.style.display = 'none';
+                return true;
+            }
+        }
+    
+        // Validate on submit
+        form.addEventListener('submit', function(event) {
+            let isValid = true;
+            
+            inputs.forEach(input => {
+                if (!validateField(input)) {
+                    isValid = false;
+                }
+            });
+    
+            if (!isValid) {
+                event.preventDefault();
+            }
+        });
+    
+        // Real-time validation
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                validateField(this);
+            });
+    
+            input.addEventListener('input', function() {
+                validateField(this);
+            });
+        });
+    });
+    </script>
+{% endblock %}

@@ -1,256 +1,308 @@
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
 import stripe
 from django.conf import settings
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.shortcuts import render
 import json
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now
-from .models import Venta, DetalleVenta, Transferencia
+from .models import DetalleVenta, Venta, Transferencia
 from ..productos.models import Producto
+from django.db.models import F
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
+@login_required
 def ventas(request):
-    empleado = request.user
-    productos = Producto.objects.all()
-    search_query = request.GET.get('search', '')
+    employe = request.user
+    products = Producto.objects.all()
+    search_query = request.GET.get('search', '')    
 
     if search_query:
-        productos = productos.filter(nombre__icontains=search_query)
+        products = products.filter(nombre__icontains=search_query)
 
     context = {
-        'empleado': empleado,
-        'productos': productos,
+        'empleado': employe,
+        'productos': products,
     }
 
     return render(request, 'ventas/register_sale.html', context)
 
+@login_required
 def get_producto(request, producto_id):
-    print(f"Producto ID recibido: {producto_id}")
     try:
-        producto = Producto.objects.get(id_producto=producto_id)
+        product = Producto.objects.get(id_producto=producto_id)
     except Producto.DoesNotExist:
-        print(f"Producto con id {producto_id} no encontrado.")
         return JsonResponse({"error": "Producto no encontrado"}, status=404)
 
-    producto_data = {
-        'nombre': producto.nombre,
-        'precio': producto.precio,
-        'categoria': producto.categoria.nombre_categoria,
-        'image': producto.image.url,
-        'descripcion': producto.descripcion if producto.descripcion else 'Sin descripción',
+    product_data = {
+        'nombre': product.nombre,
+        'precio': product.precio,
+        'categoria': product.categoria.nombre_categoria,
+        'image': product.image.url,
+        'descripcion': product.descripcion if product.descripcion else 'Sin descripción',
+        'descuento': product.descuento if product.descuento is not None and product.descuento > 0 else 0,
     }
-    return JsonResponse(producto_data)
-
+    return JsonResponse(product_data)
+@login_required
 def process_sale(request):
     if request.method == "POST":
         try:
-            print("=== Iniciando proceso de venta ===")
-            print("Método POST recibido")
-
-            # Intentamos cargar los datos JSON
+            # Intentar cargar los datos JSON
             data = json.loads(request.body)
-            print("Datos recibidos:", data)
 
-            empleado = request.user  # Usuario autenticado que realiza la venta
-            print("Empleado autenticado:", empleado)
+            employee = request.user
 
             # Validar datos
             if not data.get("products") or not data.get("total"):
-                print("Error: Datos incompletos. Faltan 'products' o 'total'")
                 return JsonResponse({"success": False, "message": "Datos incompletos"}, status=400)
 
             # Validar que el total sea un número positivo
             try:
                 total = Decimal(str(data["total"]))
                 if total <= 0:
-                    return JsonResponse({"success": False, "message": "El total debe ser un número mayor a cero"}, status=400)
+                    return JsonResponse({"success": False, "message": "El total debe ser mayor que cero"}, status=400)
             except (ValueError, TypeError):
                 return JsonResponse({"success": False, "message": "El total debe ser un número válido"}, status=400)
 
-            # Método de pago (por defecto 'EFECTIVO')
-            metodo_pago = data.get("payment_method", "EFECTIVO")
-            print("Método de pago:", metodo_pago)
-
-            # Si es una transferencia, puedes agregar un proceso extra como la validación del pago
-            if metodo_pago == "TRANSFERENCIA":
-                transferencia_completa = data.get("transferencia_completa", False)
-                if not transferencia_completa:
-                    return JsonResponse({"success": False, "message": "La transferencia no ha sido confirmada."}, status=400)
+            # Método de pago
+            payment_method = data.get("payment_method", "CASH")
 
             # Crear la venta
-            print("Creando venta con total:", total)
-            venta = Venta.objects.create(
-                empleado=empleado,
+            sale = Venta.objects.create(
+                empleado=employee,
                 total=total,
-                metodo_pago=metodo_pago,  # Usamos el método de pago recibido (EFECTIVO o TRANSFERENCIA)
+                metodo_pago=payment_method,
                 fecha=now()
             )
-            print("Venta creada exitosamente. ID:", venta.id_venta)
 
             # Obtener productos en una sola consulta
-            producto_ids = [item["id"] for item in data["products"]]
-            productos = Producto.objects.filter(id_producto__in=producto_ids)
-            productos_dict = {producto.id_producto: producto for producto in productos}
+            product_ids = [item["id"] for item in data["products"]]
+            products = Producto.objects.filter(id_producto__in=product_ids)
+            products_dict = {product.id_producto: product for product in products}
 
-            # Guardar los detalles de la venta
+            # Guardar detalles de la venta
             for item in data["products"]:
-                producto_id = item["id"]
-                if producto_id not in productos_dict:
-                    print(f"Error: Producto con ID {producto_id} no encontrado.")
-                    return JsonResponse({"success": False, "message": f"Producto con ID {producto_id} no encontrado"}, status=404)
+                product_id = item["id"]
+                if product_id not in products_dict:
+                    return JsonResponse({"success": False, "message": f"Producto con ID {product_id} no encontrado"}, status=404)
 
-                producto = productos_dict[producto_id]
-                print(f"Producto obtenido: {producto.nombre}")
+                product = products_dict[product_id]
+                
+                discount = item["discount"]
+                quantity = Decimal(item["quantity"])
+                unit_price = Decimal(str(item["price"]))
+                subtotal = quantity * unit_price
+                tax = subtotal * Decimal("0.18")
 
-                cantidad = Decimal(item["quantity"])
-                precio_unitario = Decimal(str(item["price"])) / cantidad
-                subtotal = cantidad * precio_unitario
-                # Calcular ITBIS como el 18% del subtotal
-                itbis = subtotal * Decimal("0.18")
-                print(f"Detalle - Cantidad: {cantidad}, Precio Unitario: {precio_unitario}, Subtotal: {subtotal}, ITBIS: {itbis}")
+                # Verificar si el descuento es 0 o tiene un valor distinto de nulo o vacío
+                if discount and Decimal(discount) != 0:
+                    DetalleVenta.objects.create(
+                        venta=sale,
+                        producto=product,
+                        cantidad=int(quantity),
+                        precio_unitario=unit_price,
+                        subtotal=subtotal,
+                        itbis=tax,
+                        descuento=True,
+                        cantidad_descuento=Decimal(discount)
+                    )
+                else:
+                    DetalleVenta.objects.create(
+                        venta=sale,
+                        producto=product,
+                        cantidad=int(quantity),
+                        precio_unitario=unit_price,
+                        subtotal=subtotal,
+                        itbis=tax
+                    )
 
-                DetalleVenta.objects.create(
-                    venta=venta,
-                    producto=producto,
-                    cantidad=int(cantidad),
-                    precio_unitario=precio_unitario,
-                    subtotal=subtotal,
-                    itbis=itbis
-                )
-                print("Detalle de venta creado para el producto con id:", producto.id_producto)
-
-            print("Venta registrada correctamente con ID:", venta.id_venta)
-            return JsonResponse({"success": True, "message": "Venta registrada correctamente", "sale_id": venta.id_venta})
+                # Actualizar stock usando update()
+                Producto.objects.filter(id_producto=product.id_producto).update(stock=F('stock') - int(quantity))
+            return JsonResponse({"success": True, "message": "Venta registrada exitosamente", "sale_id": sale.id_venta})
 
         except json.JSONDecodeError:
-            print("Error: JSON mal formado.")
-            return JsonResponse({"success": False, "message": "Datos no válidos. JSON mal formado."}, status=400)
+            return JsonResponse({"success": False, "message": "Datos inválidos. JSON mal formado."}, status=400)
         except Exception as e:
-            print("Excepción encontrada:", str(e))
             return JsonResponse({"success": False, "message": f"Error inesperado: {str(e)}"}, status=500)
 
-    print("Método no permitido. Se esperaba POST.")
     return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
 
 
-def process_transferencia(request):
+@login_required
+def process_transfer(request):
     if request.method == "POST":
         try:
-            print("=== Iniciando proceso de transferencia ===")
-            print("Método POST recibido")
-
-            # Leer los datos del formulario
             data = request.POST
-            print("Datos recibidos:", data)
 
-            # Validar datos: asegurarse de que no falte información clave
-            nombre_cliente = data.get("name")
-            telefono_cliente = data.get("phone")
-            correo_cliente = data.get("email")
-            numero_referencia = data.get("reference")
-            banco_emisor = data.get("bank")
-            monto_transferencia = data.get("monto")
-            tipo_cuenta = data.get("tipo_cuenta")  # Nuevo campo para el tipo de cuenta
-
-            if not all([nombre_cliente, telefono_cliente, correo_cliente, numero_referencia, banco_emisor, monto_transferencia, tipo_cuenta]):
-                print("Error: Faltan datos obligatorios en la solicitud.")
+            # Validar datos
+            required_fields = ["name", "phone", "email", "reference", "bank", "monto", "tipo_cuenta"]
+            if not all(data.get(field) for field in required_fields):
                 return JsonResponse({"success": False, "message": "Faltan datos obligatorios"}, status=400)
 
-            # Validar que el monto de la transferencia sea válido
-            try:
-                monto_transferencia = Decimal(monto_transferencia)
-                if monto_transferencia <= 0:
-                    return JsonResponse({"success": False, "message": "El monto transferido debe ser mayor a cero"}, status=400)
-            except (ValueError, TypeError):
-                return JsonResponse({"success": False, "message": "El monto transferido debe ser un número válido"}, status=400)
+            transfer_amount = Decimal(data.get("monto"))
+            if transfer_amount <= 0:
+                return JsonResponse({"success": False, "message": "El monto debe ser mayor a cero"}, status=400)
 
-            # Crear la venta
-            empleado = request.user  # Usuario autenticado que realiza la venta
-            venta = Venta.objects.create(
-                empleado=empleado,
-                total=monto_transferencia,
+            # Crear venta y transferencia
+            employee = request.user
+            sale = Venta.objects.create(
+                empleado=employee,
+                total=transfer_amount,
                 metodo_pago="TRANSFERENCIA",
                 fecha=now()
             )
-
-            # Crear la transferencia con la información del cliente y el tipo de cuenta
-            transferencia = Transferencia.objects.create(
-                venta=venta,
-                numero_referencia=numero_referencia,
-                banco_emisor=banco_emisor,
-                nombre_cliente=nombre_cliente,
-                telefono_cliente=telefono_cliente,
-                correo_cliente=correo_cliente,
-                tipo_cuenta=tipo_cuenta  # Se almacena el tipo de cuenta seleccionado
+            transfer = Transferencia.objects.create(
+                venta=sale,
+                numero_referencia=data.get("reference"),
+                banco_emisor=data.get("bank"),
+                nombre_cliente=data.get("name"),
+                telefono_cliente=data.get("phone"),
+                correo_cliente=data.get("email"),
+                tipo_cuenta=data.get("tipo_cuenta")
             )
 
-            print(f"Transferencia procesada correctamente para la venta #{venta.id_venta} con referencia {transferencia.numero_referencia}")
+            # Procesar productos (si los hay)
+            products_json = data.get("products")
+            if products_json:
+                products_data = json.loads(products_json)
+                product_ids = [int(item["id"]) for item in products_data]
+                products = Producto.objects.filter(id_producto__in=product_ids)
+                products_dict = {p.id_producto: p for p in products}
+
+                for item in products_data:
+                    product_id = int(item["id"])
+                    if product_id not in products_dict:
+                        return JsonResponse({"success": False, "message": f"Producto con ID {product_id} no encontrado"}, status=404)
+
+                    product = products_dict[product_id]
+                    quantity = Decimal(item["quantity"])
+                    if product.stock < int(quantity):
+                        return JsonResponse({"success": False, "message": f"Stock insuficiente para {product.nombre}"}, status=400)
+
+                    total_price = Decimal(str(item["price"]))
+                    unit_price = total_price / quantity
+                    subtotal = quantity * unit_price
+                    itbis = subtotal * Decimal("0.18")
+
+                    discount = item.get("discount", 0)
+                    DetalleVenta.objects.create(
+                        venta=sale,
+                        producto=product,
+                        cantidad=int(quantity),
+                        precio_unitario=unit_price,
+                        subtotal=subtotal,
+                        itbis=itbis,
+                        descuento=bool(discount),
+                        cantidad_descuento=discount if discount else 0
+                    )
+                    product.stock -= int(quantity)
+                    product.save()
 
             return JsonResponse({
-                "success": True,
-                "message": "Transferencia procesada correctamente.",
-                "sale_id": venta.id_venta,
-                "transferencia_id": transferencia.id
-            })
-
+            "success": True,
+            "message": "La transferencia y venta se registraron correctamente",  # Mensaje corregido
+            "sale_id": int(sale.id_venta),
+            "transfer_id": int(transfer.pk)
+        })
         except Exception as e:
-            print("Excepción encontrada:", str(e))
             return JsonResponse({"success": False, "message": f"Error inesperado: {str(e)}"}, status=500)
 
-    print("Método no permitido. Se esperaba POST.")
     return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)
 
-
-stripe.api_key = settings.STRIPE_SECRET_KEY
-
-def stripe_view(request):
-    return render(request, "test/stripe.html")
-
+@login_required
 def process_card_payment(request):
     if request.method == "POST":
-        print("✅ Recibida solicitud de pago")
-
         try:
             data = request.POST
-            print("📥 Datos recibidos:", data)
 
-            stripe_token = data.get("stripeToken")
-            total = data.get("total")
+            # Validar datos obligatorios
+            required_fields = ["stripeToken", "total", "products"]
+            if not all(data.get(field) for field in required_fields):
+                return JsonResponse({"success": False, "message": "Faltan datos obligatorios"}, status=400)
 
-            if not stripe_token or not total:
-                print("❌ Datos incompletos")
-                return JsonResponse({"success": False, "message": "Datos incompletos"}, status=400)
+            total_decimal = Decimal(data.get("total"))
+            if total_decimal <= 0:
+                return JsonResponse({"success": False, "message": "El monto debe ser mayor a cero"}, status=400)
 
-            total_decimal = Decimal(total)
+            products_list = json.loads(data.get("products"))
+            if not products_list:
+                return JsonResponse({"success": False, "message": "No hay productos en la compra"}, status=400)
 
+            # Calcular total con ITBIS
+            calculated_subtotal = sum(Decimal(str(item["price"])) for item in products_list)
+            itbis_total = calculated_subtotal * Decimal("0.18")
+            calculated_total_with_itbis = (calculated_subtotal + itbis_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+            if calculated_total_with_itbis != total_decimal:
+                return JsonResponse({"success": False, "message": "El total no coincide con los productos"}, status=400)
+
+            # Crear cargo en Stripe
             charge = stripe.Charge.create(
                 amount=int(total_decimal * 100),
                 currency="usd",
-                source=stripe_token,
+                source=data.get("stripeToken"),
                 description="Pago con tarjeta en POS"
             )
 
-            print("💳 Pago exitoso en Stripe:", charge.id)
-
-            venta = Venta.objects.create(
+            # Crear venta
+            sale = Venta.objects.create(
                 empleado=request.user,
                 total=total_decimal,
                 metodo_pago="TARJETA",
-                fecha=now()
+                fecha=timezone.now()
             )
+
+            # Obtener productos desde la BD
+            product_ids = [int(item["id"]) for item in products_list]
+            products_db = Producto.objects.filter(id_producto__in=product_ids)
+            products_dict = {p.id_producto: p for p in products_db}
+
+            # Procesar productos
+            for item in products_list:
+                product_id = int(item["id"])
+                product = products_dict.get(product_id)
+                if not product:
+                    return JsonResponse({"success": False, "message": f"Producto con ID {product_id} no encontrado"}, status=404)
+
+                quantity = int(item["quantity"])
+                if product.stock < quantity:
+                    return JsonResponse({"success": False, "message": f"Stock insuficiente para {product.nombre}"}, status=400)
+
+                total_price = Decimal(str(item["price"]))
+                unit_price = total_price / quantity
+                subtotal = total_price
+                itbis = subtotal * Decimal("0.18")
+                discount = item.get("discount", 0)
+
+                DetalleVenta.objects.create(
+                    venta=sale,
+                    producto=product,
+                    cantidad=quantity,
+                    precio_unitario=unit_price,
+                    subtotal=subtotal,
+                    itbis=itbis,
+                    descuento=bool(discount),
+                    cantidad_descuento=discount if discount else 0
+                )
+                product.stock -= quantity
+                product.save()
 
             return JsonResponse({
                 "success": True,
-                "message": "Pago procesado correctamente",
-                "sale_id": venta.id_venta,
+                "message": "El pago y la venta se registraron correctamente",
+                "sale_id": int(sale.id_venta),
                 "charge_id": charge.id
             })
 
         except stripe.error.CardError as e:
-            print("❌ Error con la tarjeta:", str(e))
-            return JsonResponse({"success": False, "message": "Error con la tarjeta: " + str(e)}, status=400)
+            return JsonResponse({"success": False, "message": f"Error con la tarjeta: {str(e)}"}, status=400)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "message": "Error en los datos de productos"}, status=400)
+        except ValueError:
+            return JsonResponse({"success": False, "message": "Error en los datos enviados"}, status=400)
         except Exception as e:
-            print("❌ Error inesperado:", str(e))
             return JsonResponse({"success": False, "message": f"Error inesperado: {str(e)}"}, status=500)
 
     return JsonResponse({"success": False, "message": "Método no permitido"}, status=405)

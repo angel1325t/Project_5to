@@ -57,4 +57,4 @@ export function setupScanner(toggleButton, closeButton, container, addProductToS
                 .catch(err => console.warn("Error al detener escáner:", err));
         }
     });
-}
+}   

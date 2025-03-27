@@ -1,5 +1,3 @@
-# models.py
-
 from django.db import models
 from django.conf import settings
 from ..productos.models import Producto
@@ -42,7 +40,6 @@ class Transferencia(models.Model):
     def __str__(self):
         return f"Transferencia para Venta #{self.venta.id_venta} - Ref: {self.numero_referencia}"
 
-
 class DetalleVenta(models.Model):
     id_detalle = models.AutoField(primary_key=True)
     venta = models.ForeignKey(
@@ -65,6 +62,16 @@ class DetalleVenta(models.Model):
         max_digits=10,
         decimal_places=2,
         help_text="ITBIS calculado como el 18% del subtotal"
+    )
+    descuento = models.BooleanField(
+        default=False,
+        help_text="Indica si se aplica un descuento a este detalle de venta"
+    )
+    cantidad_descuento = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Monto del descuento aplicado"
     )
 
     def __str__(self):

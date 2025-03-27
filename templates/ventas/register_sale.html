@@ -1,227 +1,418 @@
-{% extends 'empleados/empleado.html' %} 
-{% load static %} 
-{% block section1 %}
+{% extends 'empleados/empleado.html' %} {% load static %} {% block section1 %}
 
-<link rel="stylesheet" href="{% static 'css/products/product_search.css' %}">
-<link href="https://cdn.jsdelivr.net/npm/notyf@3.7.0/notyf.min.css" rel="stylesheet">   
-<div class="grid grid-cols-1 gap-6 p-4 sm:p-6">
+<link rel="stylesheet" href="{% static 'css/products/search_product.css' %}" />
+<link
+  href="https://cdn.jsdelivr.net/npm/notyf@3.7.0/notyf.min.css"
+  rel="stylesheet"
+/>
+<div class="grid grid-cols-1 gap-6 sm:p-4">
   <!-- Panel de productos -->
-  <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-4 sm:p-6">
-      <div class="flex flex-col lg:flex-row justify-between items-center mb-4 sm:mb-6">
-          <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Productos</h2>
-          <div class="flex flex-col md:flex-row sm:space-x-2 w-full sm:w-auto mt-2 sm:mt-0">
-              <button id="toggle-scanner" class="btn btn-primary flex items-center justify-center w-full sm:w-auto">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                  </svg>
-                  Escanear QR
-              </button>
-              <div class="relative w-full sm:w-auto mt-2 sm:mt-0">
-                <input type="text" id="search-product" placeholder="Buscar producto..." class="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-[#2234B9]" onkeyup="filterProducts()" />
-                <div class="absolute w-full bg-white border mt-1 rounded shadow-md hidden custom-dropdown" id="product-list">
-                    {% for producto in productos %}
-                    <div class="product-item px-3 py-2 hover:bg-gray-100 cursor-pointer" data-id="{{ producto.id_producto }}" onclick="addProductToSale('{{ producto.id }}')">
-                        {{ producto.nombre }}
-                    </div>
-                    {% endfor %}
-                </div>
-                
-                <div id="no-results-message" class="hidden absolute top-full mt-2 right-0 bg-white w-64 p-4 shadow-lg text-center text-red-600 border border-red-500 rounded-lg z-50">
-                    <button id="close-button" class="absolute top-2 right-2 text-red-600 hover:text-red-800">×</button>
-                    Producto no encontrado
-                </div>
+  <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-2 sm:p-4">
+    <div
+      class="flex flex-col lg:flex-row justify-between items-center mb-4 sm:mb-6"
+    >
+      <h2 class="text-lg sm:text-xl font-semibold text-gray-800">Productos</h2>
+      <div
+        class="flex flex-col md:flex-row sm:space-x-2 w-full sm:w-auto mt-2 sm:mt-0"
+      >
+        <button
+          id="toggle-scanner"
+          class="btn btn-primary flex items-center justify-center w-full sm:w-auto"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 mr-1"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+            />
+          </svg>
+          Escanear QR
+        </button>
+        <div class="relative w-full sm:w-auto mt-2 sm:mt-0">
+          <input
+            type="text"
+            id="search-product"
+            placeholder="Buscar producto..."
+            class="w-full px-3 py-2 border rounded focus:ring-1 focus:ring-[#2234B9]"
+            onkeyup="filterProducts()" autocomplete="off"
+          />
+          <button class="clear-button absolute top-2 right-2 text-red-600 hover:text-red-800 text-xl" id="clear-button" style="display: none;">×</button>
+          <div
+            class="absolute w-full bg-white border mt-1 rounded shadow-md hidden custom-dropdown"
+            id="product-list"
+          >
+          {% for producto in productos %}
+          {% if producto.stock >= 1 %}
+            <div
+              class="product-item"
+              data-id="{{ producto.id_producto }}"
+              onclick="addProductToSale('{{ producto.id }}')"
+            >
+              {{ producto.nombre }}
             </div>
-            
+          {% endif %}
+        {% endfor %}
+        
           </div>
-      </div>
 
-      <div id="scanner-container" class="hidden max-w-2xl mx-auto">
-          <div id="reader"></div>
-          <div class="mt-4 flex justify-end">
-              <button id="close-scanner" class="btn btn-secondary">Cerrar Escáner</button>
+          <div
+            id="no-results-message"
+            class="hidden absolute top-full mt-2 right-0 bg-white w-64 p-4 shadow-lg text-center text-red-600 border border-red-500 rounded-lg z-50"
+          >
+          <button
+          id="close-button"
+          class="absolute top-2 right-2 text-red-600 hover:text-red-800"
+        >
+          ×
+        </button>
+            Producto no encontrado
           </div>
+        </div>
       </div>
+    </div>
 
-      <div class="product-grid" id="products-container">
-          <div id="sale-items" class="mb-2 space-y-4">
-              <!-- Producto individual -->
-          </div>
-          <p id="empty-sale-message" class="text-gray-500 py-2 text-center">No hay productos agregados</p>
+    <div id="scanner-container" class="hidden max-w-2xl mx-auto">
+      <div id="reader"></div>
+      <div class="mt-4 flex justify-end">
+        <button id="close-scanner" class="btn btn-secondary">
+          Cerrar Escáner
+        </button>
       </div>
+    </div>
 
-      <div id="cash-payment" class="mt-3">
-          <label class="block text-gray-600 mb-1">Monto recibido:</label>
-          <div class="flex space-x-2">
-              <input type="number" id="cash-amount" class="border border-gray-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#2234B9]" placeholder="0.00" />
-          </div>
+    <div class="product-grid" id="products-container">
+      <div id="sale-items" class="mb-2 space-y-4">
+        <!-- Producto individual -->
       </div>
-      
-      
-      <!-- Selector de método de pago -->
-<div class="flex justify-between mb-4 mt-4">
-    <span class="text-gray-600">Método de pago:</span>
-    <select id="payment-method" class="border border-gray-300 rounded px-2 pr-6 py-1 focus:ring-1 focus:ring-[#2234B9]">
+      <p id="empty-sale-message" class="text-gray-500 py-2 text-center">
+        No hay productos agregados
+      </p>
+    </div>
+
+    <div id="cash-payment" class="mt-3">
+      <label class="block text-gray-600 mb-1">Monto recibido:</label>
+      <div class="flex space-x-2">
+        <input
+          type="number"
+          id="cash-amount"
+          class="border border-gray-300 rounded px-3 py-2 w-full focus:ring-1 focus:ring-[#2234B9]"
+          placeholder="0.00"
+        />
+      </div>
+    </div>
+
+    <!-- Selector de método de pago -->
+    <div class="flex justify-between mb-4 mt-4">
+      <span class="text-gray-600">Método de pago:</span>
+      <select
+        id="payment-method"
+        class="border border-gray-300 rounded px-2 pr-6 py-1 focus:ring-1 focus:ring-[#2234B9]"
+      >
         <option value="cash">Efectivo</option>
         <option value="card">Tarjeta</option>
         <option value="transfer">Transferencia</option>
-    </select>
-</div>
-
-<!-- Formulario de pago con tarjeta (oculto por defecto) -->
-<div id="card-payment" class="flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">Pagar con Tarjeta</h2>
-            <div class="flex space-x-2">
-                <img src="/static/icons/mastercard.svg" alt="MasterCard" class="h-8 w-auto">
-                <img src="/static/icons/visa.svg" alt="Visa" class="h-8 w-auto">
-            </div>
-        </div>
-        
-        <form id="payment-form" method="post" action="{% url 'process_card_payment' %}" class="space-y-6">
-            {% csrf_token %}
-            
-            <!-- Información del cliente -->
-            <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                        <input type="text" placeholder="Ingrese su nombre" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                    </div>
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
-                        <input type="email" placeholder="Ingrese su correo" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Detalles del pago -->
-            <div>
-                <div class="flex justify-between mb-1">
-                    <label for="total" class="block text-sm font-medium text-gray-700">Monto a pagar (USD)</label>
-                    <span class="text-sm text-gray-500" id="currency-indicator">USD $</span>
-                </div>
-                <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">$</span>
-                    <input type="number" id="total-card" name="total" step="0.01" class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm" required readonly>
-                </div>
-            </div>
-            
-            <!-- Tarjeta de crédito -->
-            <div>
-                <label for="card-element" class="block text-sm font-medium text-gray-700 mb-1">Información de tarjeta</label>
-                <div id="card-element" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"></div>
-                <div id="card-errors" role="alert" class="mt-2 text-sm text-red-600"></div>
-            </div>
-            
-            <div class="pt-2">
-                <button type="submit" id="pay-button-card" class="w-full bg-blue-600 text-white font-medium py-2 px-4 rounded-md shadow transition duration-200 flex items-center justify-center disabled">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Pagar ahora
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-500 text-center mt-4">
-                Tus datos de pago se procesan de forma segura. No almacenamos los detalles de tu tarjeta.
-            </p>
-        </form>
+      </select>
     </div>
-</div>
-        
 
+    <!-- Formulario de pago con tarjeta (oculto por defecto) -->
+<div id="card-payment" class="flex items-center justify-center hidden">
+  <div class="rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-md md:max-w-lg bg-white">
+      <div class="flex flex-col sm:flex-row items-center justify-between mb-6">
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-black mb-4 sm:mb-0 text-center sm:text-left w-full">
+              Pagar con Tarjeta
+          </h2>
+          <div class="flex space-x-2 justify-center sm:justify-end w-full">
+              <img src="/static/icons/mastercard.svg" alt="MasterCard" class="h-8 sm:h-10 w-auto opacity-75 hover:opacity-100 transition-opacity"/>
+              <img src="/static/icons/visa.svg" alt="Visa" class="h-8 sm:h-10 w-auto opacity-75 hover:opacity-100 transition-opacity"/>
+          </div>
+      </div>
+
+      <form id="payment-form" method="post" action="{% url 'process_card_payment' %}" class="space-y-6">
+          {% csrf_token %}
+
+          <div class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                      <label for="name" class="block text-sm font-medium text-black mb-1">Nombre</label>
+                      <input 
+                          type="text" 
+                          placeholder="Ingrese su nombre" 
+                          id="name" 
+                          name="name" 
+                          class="w-full px-3 py-2 border-2 border-[#23328C]/30 rounded-lg shadow-sm focus:outline-none focus:border-[#23328C] text-sm sm:text-base"
+                          required
+                      />
+                  </div>
+                  <div>
+                      <label for="email" class="block text-sm font-medium text-black mb-1">Correo electrónico</label>
+                      <input 
+                          type="email" 
+                          placeholder="Ingrese su correo" 
+                          id="email" 
+                          name="email" 
+                          class="w-full px-3 py-2 border-2 border-[#23328C]/30 rounded-lg shadow-sm focus:outline-none focus:border-[#23328C] text-sm sm:text-base"
+                          required
+                      />
+                  </div>
+              </div>
+          </div>
+
+          <div>
+              <div class="flex flex-col sm:flex-row justify-between mb-1">
+                  <label for="total" class="block text-sm font-medium text-black mb-2 sm:mb-0">Monto a pagar (USD)</label>
+                  <span class="text-sm text-[#23328C]/70 text-right" id="currency-indicator">USD $</span>
+              </div>
+              <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-[#23328C]/50">$</span>
+                  <input 
+                      type="number" 
+                      id="total-card" 
+                      name="total" 
+                      step="0.01" 
+                      class="w-full pl-7 pr-3 py-2 border-2 border-[#23328C]/30 rounded-lg shadow-sm text-[#23328C] text-sm sm:text-base"
+                      required 
+                      readonly
+                  />
+              </div>
+          </div>
+
+          <div>
+              <label for="card-element" class="block text-sm font-medium text-black mb-1">Información de tarjeta</label>
+              <div 
+                  id="card-element" 
+                  class="w-full px-3 py-2 border-2 border-[#23328C]/30 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#23328C]/50 focus:border-[#23328C] bg-white"
+              ></div>
+              <div 
+                  id="card-errors" 
+                  role="alert" 
+                  class="mt-2 text-sm text-red-600"
+              ></div>
+          </div>
+
+          <div class="pt-2">
+              <button 
+                  type="submit"
+                  id="pay-button-card" 
+                  class="w-full bg-[#23328C] text-white font-bold py-3 px-4 rounded-lg shadow-lg transition duration-300 flex items-center justify-center text-sm sm:text-base"
+              >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Pagar ahora
+              </button>
+          </div>
+
+          <p class="text-xs text-[#23328C]/70 text-center mt-4">
+              Tus datos de pago se procesan de forma segura. No almacenamos los detalles de tu tarjeta.
+          </p>
+      </form>
+  </div>
+</div>
     
-        <!-- Detalle de Producto -->
-        <div class="mt-4 p-4 border-t border-gray-300">
-            <div class="flex justify-between mb-2">
-                <span class="text-gray-600">Subtotal:</span>
-                <span id="subtotal" class="font-medium">$0.00</span>
-            </div>
-            <div class="flex justify-between mb-2">
-                <span class="text-gray-600">ITBIS (18%):</span>
-                <span id="tax" class="font-semibold text-yellow-600">$0.00</span>
-            </div>
-            <div class="flex justify-between mb-4 text-lg font-semibold text-red-600">
-                <span>Total:</span>
-                <span id="total">$0.00</span>
-            </div>
-            
-            <div class="flex justify-between mb-4">
-                <span class="text-gray-600">Monto a devolver:</span>
-                <span id="refund-amount" class="font-medium">$0.00</span>
-            </div>
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <button id="clear-sale" class="w-full transition duration-700 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">Limpiar</button>
-                <button id="pay-button" class="w-full bg-primary text-white py-2 px-4 rounded">Cobrar</button>
-            </div>
+
+      <!-- Detalle de la venta para efectivo -->
+      <div class="" id="contenedor_cash">
+        <div class="flex justify-between items-center border-b pb-3 border-gray-200">
+          <span class="text-gray-600 font-medium">Subtotal:</span>
+          <span id="subtotal" class="text-[#23328C] font-bold text-lg">$0.00</span>
         </div>
         
-          <!-- Formulario multistep (visible solo para Transferencia) -->
-            <div id="multistep-form" class="hidden">
-                <div class="flex items-center justify-around mb-6">
-                  <div class="text-center">
-                    <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-blue-600 text-white font-bold" data-step="1">1</div>
-                    <div class="mt-2 text-sm font-semibold text-gray-700">Resumen</div>
-                  </div>
-                  <div class="flex-1 mx-2 border-t-2 border-gray-300 mt-5"></div>
-                  <div class="text-center">
-                    <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-gray-300 text-white font-bold" data-step="2">2</div>
-                    <div class="mt-2 text-sm font-semibold text-gray-700">Checkout</div>
-                  </div>
-                  <div class="flex-1 mx-2 border-t-2 border-gray-300 mt-5"></div>
-                  <div class="text-center">
-                    <div class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-gray-300 text-white font-bold" data-step="3">3</div>
-                    <div class="mt-2 text-sm font-semibold text-gray-700">Transferencia</div>
-                  </div>
-                </div>
-            
-                <form action="{% url 'procesar_transferencia' %}" method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                  
-                    <!-- PASO 1 -->
-                    <div class="step-content" data-step="1">
-                    </div>
-                  
-                    <!-- PASO 2 -->
-                    <div class="step-content" data-step="2">
-                        <h2 class="text-xl font-bold mb-4">Datos del Cliente</h2>
-                        <input type="text" name="name" placeholder="Nombre completo" class="w-full border px-3 py-2 mb-2" required>
-                        <input type="tel" name="phone" id="phone" placeholder="Teléfono" class="w-full border px-3 py-2 mb-2" required maxlength="15">
-                        <input type="email" name="email" placeholder="Correo Electrónico" class="w-full border px-3 py-2 mb-2" required>
-                    </div>
-                  
-                    <!-- PASO 3 -->
-                    <div class="step-content" data-step="3">
-                        <h2 class="text-xl font-bold mb-4">Datos de la Transferencia</h2>
-                        <input type="text" name="reference" placeholder="Número de Referencia" class="w-full border px-3 py-2 mb-2" required>
-                        <input type="text" name="bank" placeholder="Banco Emisor" class="w-full border px-3 py-2 mb-2" required>
-                        <select name="tipo_cuenta" class="w-full border px-3 py-2 mb-2" required>
-                            <option value="">Seleccione el tipo de cuenta</option>
-                            <option value="CORRIENTE">Cuenta Corriente</option>
-                            <option value="AHORROS">Cuenta de Ahorros</option>
-                        </select>
-                        <input type="number" name="monto" id="monto" step="0.01" placeholder="Monto Transferido" class="w-full border px-3 py-2 mb-2 bg-gray-100 cursor-not-allowed" readonly required>
-                    </div>
-                  
-                    <div class="flex justify-between mt-6">
-                        <button type="button" class="prev-step bg-gray-300 px-4 py-2 rounded">Anterior</button>
-                        <button type="button" class="next-step bg-blue-600 text-white px-4 py-2 rounded" id="siguiente">Siguiente</button>
-                        <button type="submit" class="pay-step bg-green-600 text-white px-4 py-2 rounded">Pagar</button>
-                    </div>
-                </form>
-              </div>
-            </div>
+        <div class="flex justify-between items-center border-b pb-3 border-gray-200">
+          <span class="text-gray-600 font-medium">Descuento:</span>
+          <span id="discount" class="text-red-600 font-semibold">$0.00</span>
         </div>
+        
+        <div class="flex justify-between items-center border-b pb-3 border-gray-200">
+          <span class="text-gray-600 font-medium">ITBIS (18%):</span>
+          <span id="tax" class="text-green-600 font-semibold">$0.00</span>
+        </div>
+        
+        <div class="flex justify-between items-center pb-4 border-b border-gray-200">
+          <span class="text-xl font-bold text-gray-800">Total:</span>
+          <span id="total" class="text-2xl font-bold text-[#23328C]">$0.00</span>
+        </div>
+        
+        <div class="flex justify-between items-center mb-6">
+          <span class="text-gray-600 font-medium">Monto a devolver:</span>
+          <span id="refund-amount" class="text-yellow-600 font-semibold">$0.00</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <button
+            id="clear-sale"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform shadow-md hover:shadow-lg"
+          >
+            Limpiar
+          </button>
+          <button
+            id="pay-button"
+            class="w-full hover:bg-[#23328C] bg-blue-800 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform shadow-md hover:shadow-lg"
+          >
+            Cobrar
+          </button>
+        </div>
+      </div>
+
+      <!-- Formulario multistep (visible solo para Transferencia) -->
+    <div id="multistep-form" class="hidden">
+      <div class="flex items-center justify-around mb-6">
+        <div class="text-center">
+          <div
+            class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-blue-600 text-white font-bold"
+            data-step="1"
+          >
+            1
+          </div>
+          <div class="mt-2 text-sm font-semibold text-gray-700">Resumen</div>
+        </div>
+        <div class="flex-1 mx-2 border-t-2 border-gray-300 mt-5"></div>
+        <div class="text-center">
+          <div
+            class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-gray-300 text-white font-bold"
+            data-step="2"
+          >
+            2
+          </div>
+          <div class="mt-2 text-sm font-semibold text-gray-700">Checkout</div>
+        </div>
+        <div class="flex-1 mx-2 border-t-2 border-gray-300 mt-5"></div>
+        <div class="text-center">
+          <div
+            class="w-10 h-10 mx-auto rounded-full flex items-center justify-center step-indicator bg-gray-300 text-white font-bold"
+            data-step="3"
+          >
+            3
+          </div>
+          <div class="mt-2 text-sm font-semibold text-gray-700">
+            Transferencia
+          </div>
+        </div>
+      </div>
+
+      <form
+        action="{% url 'procesar_transferencia' %}"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        {% csrf_token %}
+
+        <!-- PASO 1 -->
+        <div class="step-content" data-step="1"></div>
+
+        <!-- PASO 2 -->
+        <div class="step-content" data-step="2">
+          <h2 class="text-xl font-bold mb-4">Datos del Cliente</h2>
+          <input
+            type="text"
+            name="name"
+            placeholder="Nombre completo"
+            class="w-full border px-3 py-2 mb-2"
+            required
+          />
+          <input
+            type="tel"
+            name="phone"
+            id="phone"
+            placeholder="Teléfono"
+            class="w-full border px-3 py-2 mb-2"
+            required
+            maxlength="15"
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="Correo Electrónico"
+            class="w-full border px-3 py-2 mb-2"
+            required
+          />
+        </div>
+
+        <!-- PASO 3 -->
+        <div class="step-content" data-step="3">
+          <h2 class="text-xl font-bold mb-4">Datos de la Transferencia</h2>
+          <input
+            type="text"
+            name="reference"
+            placeholder="Número de Referencia"
+            class="w-full border px-3 py-2 mb-2"
+            required
+          />
+          <input
+            type="text"
+            name="bank"
+            placeholder="Banco Emisor"
+            class="w-full border px-3 py-2 mb-2"
+            required
+          />
+          <select
+            name="tipo_cuenta"
+            class="w-full border px-3 py-2 mb-2"
+            required
+          >
+            <option value="">Seleccione el tipo de cuenta</option>
+            <option value="CORRIENTE">Cuenta Corriente</option>
+            <option value="AHORROS">Cuenta de Ahorros</option>
+          </select>
+          <input
+            type="number"
+            name="monto"
+            id="monto"
+            step="0.01"
+            placeholder="Monto Transferido"
+            class="w-full border px-3 py-2 mb-2 bg-gray-100 cursor-not-allowed"
+            readonly
+            required
+          />
+        </div>
+
+        <!-- Campo oculto para los productos -->
+        <input type="hidden" name="products" id="products-input" />
+
+        <div class="flex justify-between mt-6">
+          <button type="button" class="prev-step bg-gray-300 px-4 py-2 rounded">
+            Anterior
+          </button>
+          <button
+            type="button"
+            class="next-step bg-blue-600 text-white px-4 py-2 rounded"
+            id="siguiente"
+          >
+            Siguiente
+          </button>
+          <button
+            type="submit"
+            class="pay-step bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Pagar
+          </button>
+        </div>
+      </form>
+    </div>
+    </div>
+    
+  </div>
+    <div class="relative flex items-center max-w-[8rem]">
+
+    <p id="helper-text-explanation" class="mt-2 text-sm text-gray-500 dark:text-gray-400">Please select a 5 digit number from 0 to 9.</p>
 
 <script src="https://js.stripe.com/v3/"></script>
-<script src="{% static 'js/sales/stripe.js' %}"></script>
-<script src="{% static 'js/sales/validate_transfer.js' %}"></script>
-<script src="{% static 'js/sales/ver.js' %}"></script>
-<script src="{% static 'js/sales/sales.js' %}" type="module"></script>
-<script src="{% static 'js/sales/process_sales.js' %}"></script>
-<script src="{% static 'js/products/product_search.js' %}"></script>
+<script src="{% static 'js/sales/card/stripeConfig.js' %}"></script>
+<script src="{% static 'js/sales/transfer/multiStep.js' %}"></script>
+<script src="{% static 'js/sales/transfer/transferAlert.js' %}"></script>
+<script src="{% static 'js/sales/card/cardAlert.js' %}"></script>
+<script src="{% static 'js/sales/card/cardSummary.js' %}"></script>
+<script src="{% static 'js/sales/transfer/transferSummary.js' %}"></script>
+<script src="{% static 'js/sales/paymentMethodController.js' %}"></script>
+<script src="{% static 'js/sales/salesController.js' %}" type="module"></script>
+<script src="{% static 'js/sales/cash/process_cash.js' %}"></script>
+<script src="{% static 'js/products/search_product.js' %}"></script>
 <script src="https://unpkg.com/html5-qrcode" defer></script>
 
 {% endblock section1 %}

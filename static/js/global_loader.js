@@ -4,15 +4,13 @@ function showLoader() {
 }
 
 function hideLoader() {
-    setTimeout(() => {
-        document.getElementById('loading-spinner').style.display = 'none';
-        document.body.classList.remove('disable-interaction'); // Restaura interacciones
-    }, 500);
+    document.getElementById('loading-spinner').style.display = 'none';
+    document.body.classList.remove('disable-interaction'); // Restaura interacciones
 }
 
 // Ocultar el loader solo si la página se ha cargado completamente
 window.addEventListener("load", function () {
-    setTimeout(hideLoader, 1000); // Agregar un pequeño retraso para evitar que se oculte demasiado rápido
+    hideLoader();
 });
 
 // Mostrar el loader al enviar formularios
@@ -20,4 +18,4 @@ document.querySelectorAll('form').forEach(form => {
     form.addEventListener('submit', function () {
         showLoader();
     });
-}); 
+});

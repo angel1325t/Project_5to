@@ -2,56 +2,145 @@
 {% load static %}
 {% block section1 %}
 <link rel="stylesheet" href="{% static 'css/products/check_scroll.css' %}">
+<style>
+  .filters-container {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+  }
+  .filters-container.active {
+    max-height: 500px;
+    transition: max-height 0.5s ease-in;
+  }
+  .filter-toggle {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .filter-toggle svg {
+    transition: transform 0.3s ease;
+  }
+  .filter-toggle.active svg {
+    transform: rotate(180deg);
+  }
+  .search-container {
+    position: relative;
+  }
+  .search-container input {
+    padding-left: 2.5rem;
+  }
+  .search-icon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+  }
+  .animate-bounce-x {
+    animation: bounce-x 1s infinite;
+  }
+  @keyframes bounce-x {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(5px);
+    }
+  }
+</style>
 
 <section class="container px-4 mx-auto w-full">
-    <h2 class="text-lg font-medium text-gray-800">Productos</h2>
-        <!-- Barra de búsqueda y filtro de categoría -->
-        <div class="mt-2 flex flex-wrap items-center justify-between gap-4">
-            <form method="GET" class="flex flex-wrap items-center gap-4 w-full lg:w-full">
-                <input type="text" name="search" value="{{ search_query }}" placeholder="Buscar productos..."
-                    class="px-4 py-2 border rounded-md text-sm w-full lg:w-1/4" />  
-                <select name="category" class="px-4 py-2 border rounded-md text-sm w-full lg:w-1/4">
-                    <option value="">Todas las categorías</option>
-                    {% for category in categories %}
-                        <option value="{{ category.id_categoria }}" {% if category.id_categoria == category_filter %}selected{% endif %}>
-                            {{ category.nombre_categoria }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-md w-full lg:w-auto">Filtrar</button>
-            </form>
+    <div class="flex justify-between items-center">
+        <h2 class="text-lg font-medium text-gray-800">Productos</h2>
+        <div class="filter-toggle flex items-center text-primary hover:text-primary-dark">
+            <span>Filtros</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
         </div>
-
-<!-- Contenedor con scroll horizontal si es necesario -->
-<div class="relative mt-4 overflow-x-auto" id="scroll-container">
-    <!-- Indicador de desplazamiento -->
-    <div id="scroll-indicator"
-        class="hidden absolute bottom-3 flex items-center space-x-2 bg-gray-900/80 text-white text-xs px-3 py-1 rounded-full">
-        <span>Desliza</span>
-        <svg class="w-4 h-4 animate-bounce-x" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 4l4 4m0 0l-4 4m4-4H4"></path>
-        </svg>
     </div>
 
-    <div class="w-full border border-gray-200 md:rounded-lg">
-        <table class="w-full table-auto divide-y divide-gray-200 min-w-[800px]">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="py-3 px-4 text-sm font-normal text-left text-gray-500">Nombre</th>
-                    <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Cantidad</th>
-                    <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Descripción</th>
-                    <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Imagen</th>
-                    <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Precio</th>
-                    <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Estado</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% if products %}
-                    {% for product in products %}
+    <!-- Barra de búsqueda a lo largo -->
+    <div class="mt-4 search-container">
+        <span class="search-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+        </span>
+        <input type="text" id="search" placeholder="Buscar productos por nombre, descripción, marca..."
+            class="px-4 py-3 border rounded-md text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary transition-colors" />
+    </div>
+
+    <!-- Filtros desplegables -->
+<div class="filters-container mt-2">
+    <div class="p-4 bg-gray-50 rounded-md border border-gray-200">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <select id="category" class="px-4 py-2 border rounded-md text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary">
+                <option value="">Todas las categorías</option>
+                {% for category in categories %}
+                    <option value="{{ category.id_categoria }}">{{ category.nombre_categoria }}</option>
+                {% endfor %}
+            </select>
+            <select id="order_by" class="px-4 py-2 border rounded-md text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary">
+                <option value="">Ordenar por</option>
+                <option value="nombre_asc">Nombre A - Z</option>
+                <option value="nombre_desc">Nombre Z - A</option>
+                <option value="precio_asc">Precio menor a mayor</option>
+                <option value="precio_desc">Precio mayor a menor</option>
+            </select>
+            <select id="estado" class="px-4 py-2 border rounded-md text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary">
+                <option value="">Estado</option>
+                <option value="en_stock">En Stock</option>
+                <option value="bajo_stock">Bajo Stock</option>
+                <option value="agotado">Agotado</option>
+            </select>
+            <div class="flex space-x-2">
+                <input type="number" id="precio_min" placeholder="Precio mín"
+                    class="px-4 py-2 border rounded-md text-sm w-1/2 focus:ring-2 focus:ring-primary focus:border-primary" />
+                <input type="number" id="precio_max" placeholder="Precio máx"
+                    class="px-4 py-2 border rounded-md text-sm w-1/2 focus:ring-2 focus:ring-primary focus:border-primary" />
+            </div>
+        </div>
+        <!-- Botón de limpiar filtros -->
+        <div class="mt-4 flex justify-end">
+            <button id="clear-filters" class="px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary">
+                Limpiar filtros
+            </button>
+        </div>
+    </div>
+</div>
+
+    <!-- Contenedor de productos -->
+    <div class="relative mt-4 overflow-x-auto" id="scroll-container">
+        <div id="scroll-indicator"
+            class="hidden absolute bottom-3 flex items-center space-x-2 bg-gray-900/80 text-white text-xs px-3 py-1 rounded-full">
+            <span>Desliza</span>
+            <svg class="w-4 h-4 animate-bounce-x" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 4l4 4m0 0l-4 4m4-4H4"></path>
+            </svg>
+        </div>
+        <div class="w-full border border-gray-200 md:rounded-lg">
+            <table class="w-full table-auto divide-y divide-gray-200 min-w-[800px]" id="products-table">
+                <thead class="bg-gray-50">
                     <tr>
+                        <th class="py-3 px-4 text-sm font-normal text-left text-gray-500">Nombre</th>
+                        <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Cantidad</th>
+                        <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Descripción</th>
+                        <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Imagen</th>
+                        <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Precio</th>
+                        <th class="px-6 py-3 text-sm font-normal text-left text-gray-500">Estado</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200" id="products-body">
+                    {% for product in products %}
+                    <tr data-nombre="{{ product.nombre|lower }}" data-categoria="{{ product.categoria.id_categoria }}"
+                        data-stock="{{ product.stock }}" data-precio="{{ product.precio }}" data-marca="{{ product.marca }}"
+                        data-descripcion="{{ product.descripcion|lower }}">
                         <td class="px-4 py-4 text-sm font-medium">
                             <h2 class="font-medium text-gray-800">{{ product.nombre }}</h2>
-                            <p class="text-sm text-gray-600">{{ product.marca }}</p>
+                            <p class="text-sm text-gray-500">{{ product.marca }}</p>
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700">{{ product.stock }}</td>
                         <td class="px-6 py-4 text-sm text-gray-700">
@@ -59,34 +148,36 @@
                             <p class="text-gray-500">{{ product.descripcion }}</p>
                         </td>
                         <td class="px-6 py-4 text-sm">
-                            <img src="../../media/{{product.image}}" alt="{{ product.nombre }}"
+                            <img src="../../media/{{ product.image }}" alt="{{ product.nombre }}"
                                 class="w-16 h-16 object-cover">
                         </td>
                         <td class="px-6 py-4 text-sm text-gray-700">${{ product.precio }}</td>
                         <td class="px-6 py-4 text-sm">
-                            {% if product.activo %}
-                            <div class="inline-flex items-center px-3 py-1 rounded-full gap-x-2 text-emerald-500 bg-emerald-100/60">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="1.5"
-                                        stroke-linecap="round" stroke-linejoin="round" />
+                            {% if product.stock == 0 %}
+                            <div class="inline-flex items-center px-3 py-1 rounded-full gap-x-2 text-red-500 bg-red-100/60">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
-                                <span class="text-sm font-normal">Activo</span>
+                                <span class="text-sm font-normal">Agotado</span>
+                            </div>
+                            {% elif product.stock <= 25 %}
+                            <div class="inline-flex items-center px-3 py-1 rounded-full gap-x-2 text-orange-500 bg-orange-100/60">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M2.5 6.5H9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <span class="text-sm font-normal">Bajo Stock</span>
                             </div>
                             {% else %}
-                            <div class="inline-flex items-center px-3 py-1 text-red-500 rounded-full gap-x-2 bg-red-100/60">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
-                                    xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M9 3L3 9M3 3L9 9" stroke="currentColor" stroke-width="1.5"
-                                        stroke-linecap="round" stroke-linejoin="round" />
+                            <div class="inline-flex items-center px-3 py-1 rounded-full gap-x-2 text-emerald-500 bg-emerald-100/60">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M10 3L4.5 8.5L2 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
-                                <span class="text-sm font-normal">Desactivado</span>
+                                <span class="text-sm font-normal">En Stock</span>
                             </div>
                             {% endif %}
                         </td>
                     </tr>
-                    {% endfor %}
-                {% else %}
+                    {% empty %}
                     <tr>
                         <td colspan="6" class="px-4 py-4 text-center text-gray-500">
                             <div class="flex flex-col items-center">
@@ -96,51 +187,163 @@
                             </div>
                         </td>
                     </tr>
-                {% endif %}
-            </tbody>
-        </table>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
-
-
-
-
-    <!-- Paginación -->
+    <!-- Paginación (mantenida por el backend) -->
     <div class="flex items-center justify-between mt-4">
         {% if products.has_previous %}
-            <a href="?page={{ products.previous_page_number }}&search={{ search_query }}&category={{ category_filter }}" class="flex items-center px-5 py-2 text-sm text-gray-700 bg-white border rounded-md gap-x-2 hover:bg-gray-100">
+            <a href="?page={{ products.previous_page_number }}"
+                class="flex items-center px-5 py-2 text-sm text-gray-700 bg-white border rounded-md gap-x-2 hover:bg-gray-100">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18" />
                 </svg>
-                <span> Anterior </span>
+                <span>Anterior</span>
             </a>
         {% else %}
-            <span class="px-5 py-2 text-sm text-gray-400 bg-white border rounded-md cursor-not-allowed"> Anterior </span>
+            <span class="px-5 py-2 text-sm text-gray-400 bg-white border rounded-md cursor-not-allowed">Anterior</span>
         {% endif %}
-    
+
         <div class="hidden md:flex gap-x-3">
             {% for num in products.paginator.page_range %}
                 {% if products.number == num %}
                     <span class="px-2 py-1 text-sm color-primary bg-blue-100/60 rounded-md">{{ num }}</span>
                 {% else %}
-                    <a href="?page={{ num }}&search={{ search_query }}&category={{ category_filter }}" class="px-2 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-100">{{ num }}</a>
+                    <a href="?page={{ num }}"
+                        class="px-2 py-1 text-sm text-gray-500 rounded-md hover:bg-gray-100">{{ num }}</a>
                 {% endif %}
             {% endfor %}
         </div>
-    
+
         {% if products.has_next %}
-            <a href="?page={{ products.next_page_number }}&search={{ search_query }}&category={{ category_filter }}" class="flex items-center px-5 py-2 text-sm text-gray-700 bg-white border rounded-md gap-x-2 hover:bg-gray-100">
-                <span> Siguiente </span>
+            <a href="?page={{ products.next_page_number }}"
+                class="flex items-center px-5 py-2 text-sm text-gray-700 bg-white border rounded-md gap-x-2 hover:bg-gray-100">
+                <span>Siguiente</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3" />
                 </svg>
             </a>
         {% else %}
-            <span class="px-5 py-2 text-sm text-gray-400 bg-white border rounded-md cursor-not-allowed"> Siguiente </span>
+            <span class="px-5 py-2 text-sm text-gray-400 bg-white border rounded-md cursor-not-allowed">Siguiente</span>
         {% endif %}
     </div>
 </section>
-<script src="{% static 'js/products/check_scroll.js' %}"></script>
 
+<script src="{% static 'js/products/check_scroll.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Toggle de filtros
+        const filterToggle = document.querySelector('.filter-toggle');
+        const filtersContainer = document.querySelector('.filters-container');
+        
+        filterToggle.addEventListener('click', function() {
+            filtersContainer.classList.toggle('active');
+            filterToggle.classList.toggle('active');
+        });
+
+        const productsBody = document.getElementById('products-body');
+        const allRows = Array.from(productsBody.getElementsByTagName('tr'));
+
+        // Función para limpiar filtros
+        function clearFilters() {
+            document.getElementById('search').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('order_by').value = '';
+            document.getElementById('estado').value = '';
+            document.getElementById('precio_min').value = '';
+            document.getElementById('precio_max').value = '';
+            applyFiltersAndSort(); // Reaplicar filtros después de limpiar
+        }
+
+        // Función para filtrar en tiempo real
+        function applyFiltersAndSort() {
+            const search = document.getElementById('search').value.toLowerCase();
+            const category = document.getElementById('category').value;
+            const orderBy = document.getElementById('order_by').value;
+            const estado = document.getElementById('estado').value;
+            const precioMin = parseFloat(document.getElementById('precio_min').value) || -Infinity;
+            const precioMax = parseFloat(document.getElementById('precio_max').value) || Infinity;
+
+            // Filtrar productos
+            let filteredRows = allRows.filter(row => {
+                const nombre = row.dataset.nombre;
+                const categoria = row.dataset.categoria;
+                const stock = parseInt(row.dataset.stock);
+                const precio = parseFloat(row.dataset.precio);
+                const descripcion = row.dataset.descripcion;
+                const marca = row.dataset.marca;
+
+                // Filtro de búsqueda
+                const matchesSearch = !search || 
+                                     nombre.includes(search) || 
+                                     descripcion.includes(search) || 
+                                     (marca && marca.toLowerCase().includes(search));
+
+                // Filtro de categoría
+                const matchesCategory = !category || categoria === category;
+
+                // Filtro de estado
+                const matchesEstado = !estado ||
+                    (estado === 'en_stock' && stock > 25) ||
+                    (estado === 'bajo_stock' && stock <= 25 && stock > 0) ||
+                    (estado === 'agotado' && stock === 0);
+
+                // Filtro de precio
+                const matchesPrecio = precio >= precioMin && precio <= precioMax;
+
+                return matchesSearch && matchesCategory && matchesEstado && matchesPrecio;
+            });
+
+            // Ordenar productos
+            filteredRows.sort((a, b) => {
+                const nombreA = a.dataset.nombre;
+                const nombreB = b.dataset.nombre;
+                const precioA = parseFloat(a.dataset.precio);
+                const precioB = parseFloat(b.dataset.precio);
+
+                if (orderBy === 'nombre_asc') return nombreA.localeCompare(nombreB);
+                if (orderBy === 'nombre_desc') return nombreB.localeCompare(nombreA);
+                if (orderBy === 'precio_asc') return precioA - precioB;
+                if (orderBy === 'precio_desc') return precioB - precioA;
+                return 0;
+            });
+
+            // Limpiar y actualizar la tabla
+            productsBody.innerHTML = '';
+            if (filteredRows.length > 0) {
+                filteredRows.forEach(row => productsBody.appendChild(row));
+            } else {
+                productsBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-4 py-4 text-center text-gray-500">
+                            <div class="flex flex-col items-center">
+                                <img src="{% static 'icons/not_found.svg' %}" alt="No encontrado" class="w-16 h-16">
+                                <p class="mt-2 text-lg font-semibold">No se encontraron productos</p>
+                                <p class="text-gray-500">Intenta con otra búsqueda o categoría.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Escuchar cambios en tiempo real en los inputs
+        const inputs = ['search', 'category', 'order_by', 'estado', 'precio_min', 'precio_max'];
+        inputs.forEach(id => {
+            const element = document.getElementById(id);
+            ['input', 'change'].forEach(event => {
+                element.addEventListener(event, applyFiltersAndSort);
+            });
+        });
+
+        // Añadir evento al botón de limpiar
+        document.getElementById('clear-filters').addEventListener('click', clearFilters);
+
+        // Inicializar la aplicación de filtros
+        applyFiltersAndSort();
+    });
+</script>
 {% endblock section1 %}

@@ -20,4 +20,10 @@ body{
 .color-primary{
     color: #2234B9;
 }
+/* Asegúrate de que los botones tengan el color correcto */
+.swal2-confirm {
+    background-color: #2234B9 !important;
+    color: white !important;
+}
+
 

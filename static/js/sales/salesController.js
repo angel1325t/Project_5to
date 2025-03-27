@@ -1,7 +1,7 @@
 
-import { filterProducts, addProductToSale } from './productManager.js';
+import { addProductToSale } from './filterManager.js';
 import { setupScanner } from './qrScanner.js';
-import { updatePrices, updateRefund } from './priceCalculator.js';
+import { updatePrices, updateRefund } from './pricesCalculator.js';
 import { setupNotifications } from './notification.js';
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -14,8 +14,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const closeScannerButton = document.getElementById("close-scanner");
     const clearSaleButton = document.getElementById("clear-sale");
 
-    // Product search
-    document.getElementById("search-product").addEventListener("keyup", filterProducts);
 
     // Product list click handlers
     const productItems = document.querySelectorAll("#product-list .product-item");

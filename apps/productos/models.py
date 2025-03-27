@@ -21,6 +21,8 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=255)
     descripcion = models.TextField(null=True, blank=True)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
+    costo = models.DecimalField(max_digits=10, decimal_places=2)  # Nuevo campo
+    descuento = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # Nuevo campo opcional
     stock = models.PositiveIntegerField()
     image = models.ImageField(upload_to=upload_to, default='productos_img/no_image.jpg', null=True, blank=True)
     activo = models.BooleanField(default=True)
@@ -31,46 +33,41 @@ class Producto(models.Model):
     codigo_qr = models.ImageField(upload_to='qrcodes/', null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Primero guardamos el objeto para que se asigne un id
         super().save(*args, **kwargs)
 
-        # Generamos los datos para el QR code usando los atributos del objeto
         qr_data = json.dumps({
             "id": self.id_producto,
             "name": self.nombre,
             "category": self.categoria.nombre_categoria if self.categoria else "",
             "price": float(self.precio),
+            "cost": float(self.costo),
+            "discount": float(self.descuento) if self.descuento else 0,
             "stock": self.stock,
-            "image": self.image
+            "image": self.image.url if self.image else ""
         })
 
-        # Si aún no tiene código QR, lo generamos
         if not self.codigo_qr:
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,  # Ajustado para obtener ~203 píxeles de ancho
-                border=4     # Quiet zone necesaria
+                box_size=10,
+                border=4
             )
             qr.add_data(qr_data)
             qr.make(fit=True)
 
             qr_img = qr.make_image(fill_color='black', back_color='white')
 
-            # Aseguramos que sea una imagen PIL
             if not isinstance(qr_img, Image.Image):
                 qr_img = qr_img.convert("RGB")
 
-            # Guardamos la imagen QR en memoria
             qr_io = BytesIO()
             qr_img.save(qr_io, format='PNG')
             qr_io.seek(0)
             qr_file = File(qr_io, name=f'producto_{self.id_producto}_qr.png')
 
-            # Asignamos el archivo generado al campo codigo_qr
             self.codigo_qr.save(f'producto_{self.id_producto}_qr.png', qr_file, save=False)
 
-            # Guardamos nuevamente el objeto con el QR generado
             super().save(update_fields=['codigo_qr'])
 
     def __str__(self):

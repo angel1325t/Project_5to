@@ -1,3 +1,5 @@
+const searchInput = document.getElementById("search-product");
+const clearButton = document.getElementById("clear-button");
 const closeButton = document.getElementById('close-button');
 const noResultsMessage = document.getElementById('no-results-message');
 
@@ -5,11 +7,11 @@ const noResultsMessage = document.getElementById('no-results-message');
 closeButton.addEventListener('click', function () {
     noResultsMessage.style.display = "none";
 });
+
 function filterProducts() {
-    let input = document.getElementById("search-product").value.toLowerCase().trim();
+    let input = searchInput.value.toLowerCase().trim();
     let dropdown = document.getElementById("product-list");
     let items = dropdown.getElementsByClassName("product-item");
-    let noResultsMessage = document.getElementById("no-results-message");
 
     let hasResults = false;
 
@@ -24,9 +26,18 @@ function filterProducts() {
 
     if (input === "") {
         dropdown.style.display = "none";
-        noResultsMessage.style.display = "none"; // Oculta mensaje si no hay búsqueda
+        noResultsMessage.style.display = "none";
+        clearButton.style.display = "none";
     } else {
         dropdown.style.display = hasResults ? "block" : "none";
         noResultsMessage.style.display = hasResults ? "none" : "block";
+        clearButton.style.display = "block";
     }
 }
+
+// Evento para limpiar el input al hacer clic en la "X"
+clearButton.addEventListener("click", function () {
+    searchInput.value = "";
+    filterProducts();
+    searchInput.focus();
+});

@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const btnPrev = document.querySelector('.prev-step');
   const btnPay = document.querySelector('.pay-step');
 
-  let currentStep = 1;
+  window.currentStep = 1; // Hacer currentStep global para que transferAlerts.js lo use
 
   function showStep(step) {
     steps.forEach((div) => div.classList.add('hidden'));
@@ -24,35 +24,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function showValidationMessage(message) {
     const step2 = document.querySelector('.step-content[data-step="2"]');
-    
     const existingMessage = step2.querySelector('.validation-message');
     if (existingMessage) existingMessage.remove();
 
     const messageDiv = document.createElement('div');
     messageDiv.className = 'validation-message bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative mt-4';
     messageDiv.innerText = message;
-
     step2.appendChild(messageDiv);
   }
 
   function formatPhoneNumber(event) {
     let phoneNumber = event.target.value.replace(/\D/g, ''); // Solo números
-    
     if (phoneNumber.length === 1) {
-        phoneNumber = `+1 ${phoneNumber}`;
+      phoneNumber = `+1 ${phoneNumber}`;
     } else if (phoneNumber.startsWith('1')) {
-        phoneNumber = `+1 ${phoneNumber.slice(1)}`;
+      phoneNumber = `+1 ${phoneNumber.slice(1)}`;
     }
-
-    phoneNumber = phoneNumber.replace(/^\+1 1/, '+1 '); // Evita que se agregue un '1' extra
-
+    phoneNumber = phoneNumber.replace(/^\+1 1/, '+1 ');
     if (phoneNumber.length > 6) {
-        phoneNumber = phoneNumber.slice(0, 6) + '-' + phoneNumber.slice(6);
+      phoneNumber = phoneNumber.slice(0, 6) + '-' + phoneNumber.slice(6);
     }
     if (phoneNumber.length > 10) {
-        phoneNumber = phoneNumber.slice(0, 10) + '-' + phoneNumber.slice(10);
+      phoneNumber = phoneNumber.slice(0, 10) + '-' + phoneNumber.slice(10);
     }
-
     event.target.value = phoneNumber;
   }
 
@@ -61,17 +55,15 @@ document.addEventListener("DOMContentLoaded", function () {
     phoneInput.addEventListener('input', formatPhoneNumber);
   }
 
-  // Validación de paso 2
   function validateStep2() {
     const step2 = document.querySelector('.step-content[data-step="2"]');
     const inputs = step2.querySelectorAll('input[required], select[required], textarea[required]');
-    
+
     for (const input of inputs) {
       if (!input.value.trim()) {
         showValidationMessage('Por favor, completa todos los campos requeridos antes de continuar.');
         return false;
       }
-
       if (input.name === 'phone') {
         const phonePattern = /^\+1 \d{3}-\d{3}-\d{4}$/;
         if (!phonePattern.test(input.value.trim())) {
@@ -79,7 +71,6 @@ document.addEventListener("DOMContentLoaded", function () {
           return false;
         }
       }
-
       if (input.name === 'email') {
         const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?$/;
         if (!emailPattern.test(input.value.trim())) {
@@ -91,51 +82,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const existingMessage = step2.querySelector('.validation-message');
     if (existingMessage) existingMessage.remove();
-
     return true;
   }
 
   btnNext.addEventListener('click', () => {
     if (currentStep === 2) {
-      if (!validateStep2()) {
-        return;
-      }
+      if (!validateStep2()) return;
     }
-
-    if (currentStep < steps.length) showStep(++currentStep);
+    if (currentStep < steps.length) showStep(++window.currentStep);
   });
+
   btnPrev.addEventListener('click', () => {
-    if (currentStep > 1) showStep(--currentStep);
+    if (currentStep > 1) showStep(--window.currentStep);
   });
 
   // Inicialización
-  showStep(currentStep);
-});
-
-// Validaciones del formulario
-document.querySelector('form').addEventListener('submit', function(event) {
-  // Validar Número de Referencia
-  const referencia = document.querySelector('input[placeholder="Número de Referencia"]');
-  if (referencia.value.trim().length < 6 || referencia.value.trim().length > 20) {
-    alert("El número de referencia debe tener entre 6 y 20 caracteres.");
-    event.preventDefault();
-    return;
-  }
-
-  // Validar Banco Emisor
-  const bancoEmisor = document.querySelector('input[placeholder="Banco Emisor"]');
-  if (bancoEmisor.value.trim() === "") {
-    alert("El campo Banco Emisor no puede estar vacío.");
-    event.preventDefault();
-    return;
-  }
-
-  // Validar Monto Transferido
-  const monto = document.querySelector('input[placeholder="Monto Transferido"]');
-  const montoValor = parseFloat(monto.value);
-  if (isNaN(montoValor) || montoValor <= 0) {
-    alert("El monto transferido debe ser un número mayor a cero.");
-    event.preventDefault();
-    return;
-  }
+  showStep(window.currentStep);
 });
